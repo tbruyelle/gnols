@@ -65,13 +65,13 @@ func (h *handler) handleCodeLens(ctx context.Context, reply jsonrpc2.Replier, re
 		len(tAndB.Benchmarks),
 	)
 
-	items = append(items, addTestCmds(h.binManager.GnoBin(), doc.Path, tAndB)...)
-	items = append(items, addBenchCmds(h.binManager.GnoBin(), doc.Path, tAndB)...)
+	items = append(items, addTestCmds(doc.Path, tAndB)...)
+	items = append(items, addBenchCmds(doc.Path, tAndB)...)
 
 	return reply(ctx, items, err)
 }
 
-func addTestCmds(gnoBin, path string, tAndB testFns) []protocol.CodeLens {
+func addTestCmds(path string, tAndB testFns) []protocol.CodeLens {
 	cmds := []protocol.CodeLens{}
 	if len(tAndB.Tests) == 0 {
 		return cmds
@@ -105,7 +105,7 @@ func addTestCmds(gnoBin, path string, tAndB testFns) []protocol.CodeLens {
 	return cmds
 }
 
-func addBenchCmds(gnoBin, path string, tAndB testFns) []protocol.CodeLens {
+func addBenchCmds(path string, tAndB testFns) []protocol.CodeLens {
 	cmds := []protocol.CodeLens{}
 	if len(tAndB.Benchmarks) == 0 {
 		return cmds
