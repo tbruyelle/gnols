@@ -1,7 +1,7 @@
 package store
 
 import (
-	"log/slog"
+	"fmt"
 	"strings"
 
 	"go.lsp.dev/protocol"
@@ -21,27 +21,23 @@ func NewDocumentStore() *DocumentStore {
 	}
 }
 
-func (s *DocumentStore) DidOpen(params protocol.DidOpenTextDocumentParams) (*Document, error) {
-	uri := params.TextDocument.URI
-
+func (s *DocumentStore) Save(uri uri.URI, content string) (*Document, error) {
 	path, err := s.normalizePath(uri)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("normalize path %s: %w", uri, err)
 	}
-
-	pgf, parseErr := NewParsedGnoFile(path, params.TextDocument.Text)
-	if parseErr != nil {
-		slog.Warn("parse_err", "err", parseErr)
+	pgf, err := NewParsedGnoFile(path, content)
+	if err != nil {
+		return nil, fmt.Errorf("parse file %s error: %w", path, err)
 	}
 
 	doc := &Document{
 		URI:     uri,
 		Path:    path,
-		Content: params.TextDocument.Text,
-		Lines:   strings.SplitAfter(params.TextDocument.Text, "\n"),
+		Content: content,
+		Lines:   strings.SplitAfter(content, "\n"),
 		Pgf:     pgf,
 	}
-
 	s.documents.Set(path, doc)
 	return doc, nil
 }

@@ -38,13 +38,13 @@ func (h *handler) handleCodeLens(ctx context.Context, reply jsonrpc2.Replier, re
 
 	err := json.Unmarshal(req.Params(), &params)
 	if err != nil {
-		return badJSON(ctx, reply, err)
+		return replyBadJSON(ctx, reply, err)
 	}
 	items := []protocol.CodeLens{}
 
 	doc, ok := h.documents.Get(params.TextDocument.URI)
 	if !ok {
-		return noDocFound(ctx, reply, params.TextDocument.URI)
+		return replyNoDocFound(ctx, reply, params.TextDocument.URI)
 	}
 
 	if !strings.HasSuffix(doc.Path, "_test.gno") {
@@ -68,7 +68,7 @@ func (h *handler) handleCodeLens(ctx context.Context, reply jsonrpc2.Replier, re
 	items = append(items, addTestCmds(doc.Path, tAndB)...)
 	items = append(items, addBenchCmds(doc.Path, tAndB)...)
 
-	return reply(ctx, items, err)
+	return reply(ctx, items, nil)
 }
 
 func addTestCmds(path string, tAndB testFns) []protocol.CodeLens {

@@ -16,12 +16,12 @@ func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrp
 
 	err := json.Unmarshal(req.Params(), &params)
 	if err != nil {
-		return badJSON(ctx, reply, err)
+		return replyBadJSON(ctx, reply, err)
 	}
 
 	settings, ok := params.Settings.(map[string]interface{})
 	if !ok {
-		return reply(ctx, nil, ErrBadSettings)
+		return replyErr(ctx, reply, ErrBadSettings)
 	}
 	slog.Info("configuration changed", "settings", settings)
 
@@ -33,5 +33,8 @@ func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrp
 	root, _ := settings["root"].(string)
 
 	h.binManager, err = gno.NewBinManager(gnoBin, gnokey, root, precompile, build)
-	return reply(ctx, nil, err)
+	if err != nil {
+		return replyErr(ctx, reply, err)
+	}
+	return reply(ctx, nil, nil)
 }

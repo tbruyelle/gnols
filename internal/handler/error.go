@@ -3,23 +3,24 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/uri"
 )
 
-var (
-	ErrNoDocument  = errors.New("no document found")
-	ErrBadSettings = errors.New("bad settings")
-)
+var ErrBadSettings = errors.New("bad settings")
 
-func noDocFound(ctx context.Context, reply jsonrpc2.Replier, uri uri.URI) error {
-	slog.Warn("Could not get document", "doc", uri.Filename())
-	return reply(ctx, nil, ErrNoDocument)
+func replyErr(ctx context.Context, reply jsonrpc2.Replier, err error) error {
+	slog.Error(err.Error())
+	return reply(ctx, nil, err)
 }
 
-func badJSON(ctx context.Context, reply jsonrpc2.Replier, err error) error {
-	slog.Warn("Could not parse JSON", "err", err)
-	return reply(ctx, nil, err)
+func replyNoDocFound(ctx context.Context, reply jsonrpc2.Replier, uri uri.URI) error {
+	return replyErr(ctx, reply, fmt.Errorf("couldn't find document %s", uri.Filename()))
+}
+
+func replyBadJSON(ctx context.Context, reply jsonrpc2.Replier, err error) error {
+	return replyErr(ctx, reply, fmt.Errorf("could not parse JSON: %w", err))
 }

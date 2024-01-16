@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"unicode/utf8"
 
@@ -16,12 +17,12 @@ func (h *handler) handleTextDocumentFormatting(ctx context.Context, reply jsonrp
 	if req.Params() == nil {
 		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
 	} else if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return badJSON(ctx, reply, err)
+		return replyBadJSON(ctx, reply, err)
 	}
 
 	doc, ok := h.documents.Get(params.TextDocument.URI)
 	if !ok {
-		return noDocFound(ctx, reply, params.TextDocument.URI)
+		return replyNoDocFound(ctx, reply, params.TextDocument.URI)
 	}
 
 	if h.binManager == nil {
@@ -32,8 +33,7 @@ func (h *handler) handleTextDocumentFormatting(ctx context.Context, reply jsonrp
 
 	formatted, err := h.binManager.Format(doc.Content)
 	if err != nil {
-		slog.Error("formatting", "error", err, "text", formatted)
-		return reply(ctx, nil, err)
+		return replyErr(ctx, reply, fmt.Errorf("formatting: %w", err))
 	}
 
 	slog.Info("formatting", "post", formatted)

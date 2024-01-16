@@ -65,7 +65,7 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 	var params protocol.InitializeParams
 
 	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return badJSON(ctx, reply, err)
+		return replyBadJSON(ctx, reply, err)
 	}
 
 	return reply(ctx, protocol.InitializeResult{
