@@ -40,7 +40,7 @@ func (d *Document) ApplyChangesToAst(path string) {
 		return
 	}
 
-	d.Pgf = &ParsedGnoFile{File: file}
+	d.Pgf = &ParsedGnoFile{File: file, FileSet: fset}
 }
 
 func (d *Document) LookupSymbol(name string, offset int) *stdlib.Symbol {
