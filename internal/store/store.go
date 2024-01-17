@@ -26,10 +26,7 @@ func (s *DocumentStore) Save(uri uri.URI, content string) (*Document, error) {
 	if err != nil {
 		return nil, fmt.Errorf("normalize path %s: %w", uri, err)
 	}
-	pgf, err := NewParsedGnoFile(path, content)
-	if err != nil {
-		return nil, fmt.Errorf("parse file %s error: %w", path, err)
-	}
+	pgf := NewParsedGnoFile(path, content)
 
 	doc := &Document{
 		URI:     uri,

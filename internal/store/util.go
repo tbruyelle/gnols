@@ -35,7 +35,7 @@ func canonical(path string) (string, error) {
 
 	resolvedPath, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return path, err
+		return path, nil // ignore error if path doen't exists in FS
 	}
 
 	return resolvedPath, nil

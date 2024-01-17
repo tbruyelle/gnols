@@ -21,10 +21,7 @@ func TestCodeLensFind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pgf, parseErr := store.NewParsedGnoFile(filePath, string(dat))
-	if parseErr != nil {
-		t.Fatal(parseErr)
-	}
+	pgf := store.NewParsedGnoFile(filePath, string(dat))
 
 	doc := &store.Document{
 		Path: filePath,

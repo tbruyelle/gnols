@@ -26,7 +26,7 @@ type HoveredToken struct {
 func (d *Document) ApplyChanges(changes []protocol.TextDocumentContentChangeEvent) {
 	d.Content = changes[0].Text
 	d.Lines = strings.SplitAfter(d.Content, "\n")
-	d.ApplyChangesToAst(d.Path)
+	d.ApplyChangesToAst(d.Path, d.Content)
 }
 
 func (d *Document) SpanToRange(start, _ int) protocol.Range {

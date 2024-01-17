@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/importer"
 	"go/parser"
+	"go/scanner"
 	"go/token"
 	"go/types"
 	"log/slog"
@@ -16,31 +17,24 @@ import (
 type ParsedGnoFile struct {
 	File    *ast.File
 	FileSet *token.FileSet
+	Errors  scanner.ErrorList
 }
 
 // NewParsedGnoFile parses the Gno file with the standard parser, including
 // comments.
-func NewParsedGnoFile(path, content string) (*ParsedGnoFile, error) {
+func NewParsedGnoFile(path, content string) *ParsedGnoFile {
 	fset := token.NewFileSet()
-
 	file, err := parser.ParseFile(fset, path, content, parser.ParseComments)
+	var parseErr scanner.ErrorList
 	if err != nil {
-		return nil, err
+		parseErr = err.(scanner.ErrorList)
 	}
-
-	return &ParsedGnoFile{File: file, FileSet: fset}, nil
+	return &ParsedGnoFile{File: file, FileSet: fset, Errors: parseErr}
 }
 
 // ApplyChangesToAst applies the changes in the Document to the AST.
-func (d *Document) ApplyChangesToAst(path string) {
-	fset := token.NewFileSet()
-
-	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
-	if err != nil {
-		return
-	}
-
-	d.Pgf = &ParsedGnoFile{File: file, FileSet: fset}
+func (d *Document) ApplyChangesToAst(path, content string) {
+	d.Pgf = NewParsedGnoFile(path, content)
 }
 
 func (d *Document) LookupSymbol(name string, offset int) *stdlib.Symbol {

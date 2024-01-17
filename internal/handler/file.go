@@ -19,7 +19,7 @@ func (h *handler) handleTextDocumentDidOpen(ctx context.Context, reply jsonrpc2.
 
 	doc, err := h.documents.Save(params.TextDocument.URI, params.TextDocument.Text)
 	if err != nil {
-		return replyNoDocFound(ctx, reply, params.TextDocument.URI)
+		return replyErr(ctx, reply, fmt.Errorf("documents.Save: %w", err))
 	}
 
 	notification := h.notificationFromGno(ctx, h.connPool, doc)
