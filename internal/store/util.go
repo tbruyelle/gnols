@@ -33,10 +33,9 @@ func uriToPath(docuri uri.URI) (string, error) {
 func canonical(path string) (string, error) {
 	path = filepath.Clean(path)
 
-	resolvedPath, err := filepath.EvalSymlinks(path)
+	resolvedPath, err := filepath.EvalSymlinks(path) //nolint:errcheck
 	if err != nil {
-		// ignore error if path doen't exists in FS
-		return path, nil //nolint:errcheck
+		return path, nil // ignore error if path doen't exists in FS
 	}
 
 	return resolvedPath, nil
