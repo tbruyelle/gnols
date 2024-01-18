@@ -27,7 +27,7 @@ func NewParsedGnoFile(path, content string) *ParsedGnoFile {
 	file, err := parser.ParseFile(fset, path, content, parser.ParseComments)
 	var parseErr scanner.ErrorList
 	if err != nil {
-		parseErr = err.(scanner.ErrorList)
+		parseErr = err.(scanner.ErrorList) //nolint:errcheck,errorlint
 	}
 	return &ParsedGnoFile{File: file, FileSet: fset, Errors: parseErr}
 }
