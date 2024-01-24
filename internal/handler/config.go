@@ -26,13 +26,14 @@ func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrp
 	slog.Info("configuration changed", "settings", settings)
 
 	gnoBin, _ := settings["gno"].(string)
-	gnokey, _ := settings["gnokey"].(string)
+	gnokeyBin, _ := settings["gnokey"].(string)
+	goplsBin, _ := settings["gopls"].(string)
 
 	precompile, _ := settings["precompileOnSave"].(bool)
 	build, _ := settings["buildOnSave"].(bool)
 	root, _ := settings["root"].(string)
 
-	h.binManager, err = gno.NewBinManager(gnoBin, gnokey, root, precompile, build)
+	h.binManager, err = gno.NewBinManager(gnoBin, gnokeyBin, goplsBin, root, precompile, build)
 	if err != nil {
 		return replyErr(ctx, reply, err)
 	}

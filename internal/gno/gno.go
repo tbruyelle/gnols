@@ -2,21 +2,23 @@ package gno
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"go/format"
+	"log/slog"
+	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 
-	"github.com/jdkato/gnols/internal/stdlib"
 	"github.com/jdkato/gnols/internal/store"
+	"go.lsp.dev/protocol"
+	"go.lsp.dev/uri"
 )
 
-var (
-	ErrNoGno = errors.New("no gno binary found")
-)
-
-var goplsDefRe = regexp.MustCompile(`(?ms)(.+) defined here as ([^\n]+)\n(.+)`)
+var ErrNoGno = errors.New("no gno binary found")
 
 // BinManager is a wrapper for the gno binary and related tooling.
 //
@@ -44,34 +46,34 @@ type BuildError struct {
 // If the user does not provide a path to the required binaries, we search the
 // user's PATH for them.
 //
-// `gno`: The path to the `gno` binary.
-// `gnokey`: The path to the `gnokey` binary.
+// `gnoBin`: The path to the `gno` binary.
+// `gnokeyBin`: The path to the `gnokey` binary.
+// `goplsBin`: The path to the `gopls` binary.
 // `root`: The path to the `gno` repository
 // `precompile`: Whether to precompile Gno files on save.
 // `build`: Whether to build Gno files on save.
 //
-// NOTE: Unlike `gnoBin`, `gnokey` is optional.
-func NewBinManager(gno, gnokey, root string, precompile, build bool) (*BinManager, error) {
-	var err error
-
-	gnoBin := gno
+// NOTE: Unlike `gnoBin`, `gnokeyBin` is optional.
+func NewBinManager(gnoBin, gnokeyBin, goplsBin, root string, precompile, build bool) (*BinManager, error) {
 	if gnoBin == "" {
+		var err error
 		gnoBin, err = exec.LookPath("gno")
 		if err != nil {
 			return nil, ErrNoGno
 		}
 	}
-
-	gnokeyBin := gnokey
 	if gnokeyBin == "" {
 		gnokeyBin, _ = exec.LookPath("gnokey")
 	}
-
-	gopls, _ := exec.LookPath("gopls")
+	slog.Info("gopls init", "path", goplsBin)
+	if goplsBin == "" {
+		goplsBin, _ = exec.LookPath("gopls")
+		slog.Info("gopls lookup", "path", goplsBin)
+	}
 	return &BinManager{
 		gno:              gnoBin,
 		gnokey:           gnokeyBin,
-		gopls:            gopls,
+		gopls:            goplsBin,
 		root:             root,
 		shouldPrecompile: precompile,
 		shouldBuild:      build,
@@ -146,35 +148,67 @@ func (m *BinManager) Lint(doc *store.Document) ([]BuildError, error) {
 	return parseError(doc, string(preOut), "precompile")
 }
 
+var goplsDefRe = regexp.MustCompile(`(.+):(\d+):(\d+)-(\d+): defined here as (.+) (.+)`)
+
 // Definition returns the definition of the symbol at the given position
 // using the `gopls` tool.
 //
 // TODO:
 //
 // * invalid types
-// * function calls
-func (m *BinManager) Definition(path string, line, col uint32) (stdlib.Symbol, error) {
-	var buf bytes.Buffer
-
+// * add -json flag (better than regexp)
+func (m *BinManager) Definition(ctx context.Context, path string, line, col uint32) (protocol.Location, error) {
 	// Location is 1-based and shifted down 4 lines.
 	target := fmt.Sprintf("%s.gen.go:%d:%d", path, line+5, col+1)
 
-	cmd := exec.Command(m.gopls, "definition", target) //nolint:gosec
+	cmd := exec.CommandContext(ctx, m.gopls, "definition", target) //nolint:gosec
+	// *.gen.go files have the gno build tag.
+	// Must append to os.Environ or else gopls doesn't find the go binary.
+	cmd.Env = append(os.Environ(), "GOFLAGS=-tags=gno")
+	var buf bytes.Buffer
 	cmd.Stdout = &buf
+	var bufErr bytes.Buffer
+	cmd.Stderr = &bufErr
 
 	err := cmd.Run()
 	if err != nil {
-		return stdlib.Symbol{}, err
+		return protocol.Location{}, fmt.Errorf("'gopls definition %s' error :%s:%v", target, bufErr.String(), err)
 	}
 
 	matches := goplsDefRe.FindStringSubmatch(buf.String())
-	if len(matches) != 4 {
-		return stdlib.Symbol{}, fmt.Errorf("invalid gopls output: %s", buf.String())
+	if len(matches) != 7 {
+		return protocol.Location{}, fmt.Errorf("invalid gopls output: %s", buf.String())
 	}
+	spath := strings.TrimSuffix(matches[1], ".gen.go")
+	sline, err := strconv.Atoi(matches[2])
+	if err != nil {
+		return protocol.Location{}, fmt.Errorf("invalid gopls line output: %s", matches[2])
+	}
+	scharStart, err := strconv.Atoi(matches[3])
+	if err != nil {
+		return protocol.Location{}, fmt.Errorf("invalid gopls char start output: %s", matches[3])
+	}
+	scharEnd, err := strconv.Atoi(matches[4])
+	if err != nil {
+		return protocol.Location{}, fmt.Errorf("invalid gopls char end output: %s", matches[4])
+	}
+	// Location is 1-based and shifted down 4 lines.
+	sline -= 5
+	scharStart--
+	scharEnd--
+	slog.Info("Definition matches", "path", spath, "line", sline, "char_start", scharStart, "char_end", scharEnd)
 
-	return stdlib.Symbol{
-		Name:      "",
-		Signature: matches[2],
-		Doc:       matches[3],
+	return protocol.Location{
+		URI: uri.File(spath),
+		Range: protocol.Range{
+			Start: protocol.Position{
+				Line:      uint32(sline),
+				Character: uint32(scharStart),
+			},
+			End: protocol.Position{
+				Line:      uint32(sline),
+				Character: uint32(scharEnd),
+			},
+		},
 	}, nil
 }
