@@ -157,6 +157,7 @@ var goplsDefRe = regexp.MustCompile(`(.+):(\d+):(\d+)-(\d+): defined here as (.+
 //
 // * invalid types
 // * add -json flag (better than regexp)
+// * add handy BinManager.RunGoPls
 func (m *BinManager) Definition(ctx context.Context, path string, line, col uint32) (protocol.Location, error) {
 	// Location is 1-based and shifted down 4 lines.
 	target := fmt.Sprintf("%s.gen.go:%d:%d", path, line+5, col+1)
