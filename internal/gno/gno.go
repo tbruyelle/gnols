@@ -173,7 +173,7 @@ func (m *BinManager) Definition(ctx context.Context, path string, line, col uint
 
 	err := cmd.Run()
 	if err != nil {
-		return protocol.Location{}, fmt.Errorf("'gopls definition %s' error :%s:%v", target, bufErr.String(), err)
+		return protocol.Location{}, fmt.Errorf("'gopls definition %s' error :%s:%w", target, bufErr.String(), err)
 	}
 
 	matches := goplsDefRe.FindStringSubmatch(buf.String())
