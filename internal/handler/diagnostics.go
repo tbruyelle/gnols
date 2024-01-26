@@ -28,13 +28,9 @@ func (h *handler) notificationFromGno(ctx context.Context, conn jsonrpc2.Conn, d
 func (h *handler) getDiagnostics(doc *store.Document) ([]protocol.Diagnostic, error) {
 	diagnostics := []protocol.Diagnostic{}
 
-	if h.binManager == nil {
-		slog.Warn("diagnostics", "no bin manager", h.binManager)
-		return diagnostics, nil
-	}
 	slog.Info("Lint", "path", doc.Path)
 
-	computed, err := h.binManager.Lint(doc)
+	computed, err := h.getBinManager().Lint(doc)
 	if err != nil {
 		return diagnostics, err
 	}

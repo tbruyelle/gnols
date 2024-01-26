@@ -41,6 +41,6 @@ func (h *handler) handleExecuteCommand(ctx context.Context, reply jsonrpc2.Repli
 
 func (h *handler) runTest(pkg, test string) {
 	slog.Info("execute_command", "pkg", pkg, "test", test)
-	out, _ := h.binManager.RunTest(pkg, test)
+	out, _ := h.getBinManager().RunTest(pkg, test)
 	slog.Info("execute_command", "out", string(out))
 }

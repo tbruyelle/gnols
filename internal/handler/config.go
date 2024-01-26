@@ -37,5 +37,6 @@ func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrp
 	if err != nil {
 		return replyErr(ctx, reply, err)
 	}
+	close(h.configLoaded)
 	return reply(ctx, nil, nil)
 }

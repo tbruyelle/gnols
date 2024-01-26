@@ -16,16 +16,24 @@ type handler struct {
 	connPool   jsonrpc2.Conn
 	documents  *store.DocumentStore
 	binManager *gno.BinManager
+	// NOTE(tb): See why [here](https://github.com/tbruyelle/gnols/issues/11)
+	configLoaded chan struct{}
 }
 
 func NewHandler(connPool jsonrpc2.Conn) jsonrpc2.Handler {
 	handler := &handler{
-		connPool:   connPool,
-		documents:  store.NewDocumentStore(),
-		binManager: nil,
+		connPool:     connPool,
+		documents:    store.NewDocumentStore(),
+		binManager:   nil,
+		configLoaded: make(chan struct{}),
 	}
 	slog.Info("connections opened")
 	return jsonrpc2.ReplyHandler(handler.handle)
+}
+
+func (h *handler) getBinManager() *gno.BinManager {
+	<-h.configLoaded
+	return h.binManager
 }
 
 func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
