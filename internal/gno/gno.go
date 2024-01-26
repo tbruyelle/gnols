@@ -3,18 +3,16 @@ package gno
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go/format"
 	"log/slog"
 	"os"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/jdkato/gnols/internal/store"
-	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
@@ -65,10 +63,8 @@ func NewBinManager(gnoBin, gnokeyBin, goplsBin, root string, precompile, build b
 	if gnokeyBin == "" {
 		gnokeyBin, _ = exec.LookPath("gnokey")
 	}
-	slog.Info("gopls init", "path", goplsBin)
 	if goplsBin == "" {
 		goplsBin, _ = exec.LookPath("gopls")
-		slog.Info("gopls lookup", "path", goplsBin)
 	}
 	return &BinManager{
 		gno:              gnoBin,
@@ -148,68 +144,99 @@ func (m *BinManager) Lint(doc *store.Document) ([]BuildError, error) {
 	return parseError(doc, string(preOut), "precompile")
 }
 
-var goplsDefRe = regexp.MustCompile(`(.+):(\d+):(\d+)-(\d+): defined here as (.+) (.+)`)
+type GoplsDefinition struct {
+	Span        Span
+	Description string
+}
+
+type Span struct {
+	URI   uri.URI
+	Start Location
+	End   Location
+}
+
+type Location struct {
+	Line   uint32
+	Column uint32
+	Offset uint32
+}
+
+// Position returns s position in format filename:line:column.
+func (s Span) Position() string {
+	return fmt.Sprintf("%s:%d:%d", s.URI.Filename(), s.Start.Line, s.Start.Column)
+}
+
+// GenGo2Gno shifts the .gno Span s into a .gen.go Span.
+func (s Span) Gno2GenGo() Span {
+	if strings.Contains(string(s.URI), ".gen.go") {
+		panic(fmt.Sprintf("span %v is not a .gno referrence", s))
+	}
+	// Remove .gen.go extention, we want to target the gno file
+	s.URI = uri.New(string(s.URI) + ".gen.go")
+	// Shift lines & columns
+	s.Start.Line += 5
+	s.Start.Column++
+	s.End.Line += 5
+	s.End.Column++
+	return s
+}
+
+// GenGo2Gno shifts the .gen.go Span s into a .gno Span.
+func (s Span) GenGo2Gno() Span {
+	if !strings.Contains(string(s.URI), ".gen.go") {
+		panic(fmt.Sprintf("span %v is not a .gen.go referrence", s))
+	}
+	// Remove .gen.go extention, we want to target the gno file
+	s.URI = uri.New(strings.ReplaceAll(string(s.URI), ".gen.go", ""))
+	// Shift lines & columns
+	s.Start.Line -= 5
+	s.Start.Column--
+	s.End.Line -= 5
+	s.End.Column--
+	return s
+}
 
 // Definition returns the definition of the symbol at the given position
 // using the `gopls` tool.
 //
 // TODO:
 //
-// * invalid types
-// * add -json flag (better than regexp)
 // * add handy BinManager.RunGoPls
-func (m *BinManager) Definition(ctx context.Context, path string, line, col uint32) (protocol.Location, error) {
-	// Location is 1-based and shifted down 4 lines.
-	target := fmt.Sprintf("%s.gen.go:%d:%d", path, line+5, col+1)
+// * move gnols stuff in an other packahe
+func (m *BinManager) Definition(ctx context.Context, uri uri.URI, line, col uint32) (GoplsDefinition, error) {
+	// Build a reference to the .gen.gno file position
+	target := Span{
+		URI: uri,
+		Start: Location{
+			Line:   line,
+			Column: col,
+		},
+	}.Gno2GenGo().Position()
+	slog.Info("fetching definition", "uri", uri, "line", line, "col", col, "target", target)
 
-	cmd := exec.CommandContext(ctx, m.gopls, "definition", target) //nolint:gosec
+	// Prepare call to gopls
+	cmd := exec.CommandContext(ctx, m.gopls, "definition", "-json", target) //nolint:gosec
 	// *.gen.go files have the gno build tag.
-	// Must append to os.Environ or else gopls doesn't find the go binary.
+	// Must append to os.Environ() or else gopls doesn't find the go binary.
 	cmd.Env = append(os.Environ(), "GOFLAGS=-tags=gno")
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	var bufErr bytes.Buffer
 	cmd.Stderr = &bufErr
 
+	// Run command
 	err := cmd.Run()
 	if err != nil {
-		return protocol.Location{}, fmt.Errorf("'gopls definition %s' error :%s:%w", target, bufErr.String(), err)
+		return GoplsDefinition{}, fmt.Errorf("'gopls definition %s' error :%s:%w", target, bufErr.String(), err)
 	}
 
-	matches := goplsDefRe.FindStringSubmatch(buf.String())
-	if len(matches) != 7 {
-		return protocol.Location{}, fmt.Errorf("invalid gopls output: %s", buf.String())
+	// Parse output
+	var def GoplsDefinition
+	if err := json.Unmarshal(buf.Bytes(), &def); err != nil {
+		return GoplsDefinition{}, fmt.Errorf("unexpected gopls definition output: %w", err)
 	}
-	spath := strings.TrimSuffix(matches[1], ".gen.go")
-	sline, err := strconv.Atoi(matches[2])
-	if err != nil {
-		return protocol.Location{}, fmt.Errorf("invalid gopls line output: %s", matches[2])
-	}
-	scharStart, err := strconv.Atoi(matches[3])
-	if err != nil {
-		return protocol.Location{}, fmt.Errorf("invalid gopls char start output: %s", matches[3])
-	}
-	scharEnd, err := strconv.Atoi(matches[4])
-	if err != nil {
-		return protocol.Location{}, fmt.Errorf("invalid gopls char end output: %s", matches[4])
-	}
-	// Location is 1-based and shifted down 4 lines.
-	sline -= 5
-	scharStart--
-	scharEnd--
-	slog.Info("Definition matches", "path", spath, "line", sline, "char_start", scharStart, "char_end", scharEnd)
-
-	return protocol.Location{
-		URI: uri.File(spath),
-		Range: protocol.Range{
-			Start: protocol.Position{
-				Line:      uint32(sline),
-				Character: uint32(scharStart),
-			},
-			End: protocol.Position{
-				Line:      uint32(sline),
-				Character: uint32(scharEnd),
-			},
-		},
-	}, nil
+	// Turn back span to .gno file.
+	def.Span = def.Span.GenGo2Gno()
+	slog.Info("definition found", "position", def.Span.Position())
+	return def, nil
 }
