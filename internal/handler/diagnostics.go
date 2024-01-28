@@ -10,7 +10,7 @@ import (
 	"github.com/jdkato/gnols/internal/store"
 )
 
-func (h *handler) notificationFromGno(ctx context.Context, conn jsonrpc2.Conn, doc *store.Document) error {
+func (h *handler) publishDianostics(ctx context.Context, conn jsonrpc2.Conn, doc *store.Document) error {
 	diagnostics, err := h.getDiagnostics(doc)
 	if err != nil {
 		return err

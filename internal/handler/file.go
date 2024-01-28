@@ -22,8 +22,10 @@ func (h *handler) handleTextDocumentDidOpen(ctx context.Context, reply jsonrpc2.
 		return replyErr(ctx, reply, fmt.Errorf("documents.Save: %w", err))
 	}
 
-	notification := h.notificationFromGno(ctx, h.connPool, doc)
-	return reply(ctx, notification, nil)
+	if err := h.publishDianostics(ctx, h.connPool, doc); err != nil {
+		slog.Error("publishDianostics", "doc", doc.Path, "err", err)
+	}
+	return reply(ctx, nil, nil)
 }
 
 func (h *handler) handleTextDocumentDidClose(ctx context.Context, reply jsonrpc2.Replier, _ jsonrpc2.Request) error {
@@ -59,8 +61,10 @@ func (h *handler) handleTextDocumentDidSave(ctx context.Context, reply jsonrpc2.
 		doc = newDoc
 	}
 
-	notification := h.notificationFromGno(ctx, h.connPool, doc)
-	return reply(ctx, notification, nil)
+	if err := h.publishDianostics(ctx, h.connPool, doc); err != nil {
+		slog.Error("publishDianostics", "doc", doc.Path, "err", err)
+	}
+	return reply(ctx, nil, nil)
 }
 
 func (h *handler) handleTextDocumentDidChange(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
