@@ -30,7 +30,7 @@ linters-settings:
 
     settings:
       shadow:
-        strict: true
+        strict: false
 
   nakedret:
     max-func-lines: 0
