@@ -33,10 +33,11 @@ func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrp
 	build, _ := settings["buildOnSave"].(bool)
 	root, _ := settings["root"].(string)
 
-	h.binManager, err = gno.NewBinManager(gnoBin, gnokeyBin, goplsBin, root, precompile, build)
+	h.binManager, err = gno.NewBinManager(h.workspaceFolder, gnoBin, gnokeyBin, goplsBin, root, precompile, build)
 	if err != nil {
 		return replyErr(ctx, reply, err)
 	}
+	slog.Info("binManager created", "workspaceFolder", h.workspaceFolder)
 	close(h.configLoaded)
 	return reply(ctx, nil, nil)
 }

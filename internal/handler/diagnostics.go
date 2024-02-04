@@ -30,21 +30,25 @@ func (h *handler) getDiagnostics(doc *store.Document) ([]protocol.Diagnostic, er
 
 	slog.Info("Lint", "path", doc.Path)
 
-	computed, err := h.getBinManager().Lint(doc)
+	buildErrs, err := h.getBinManager().Lint()
 	if err != nil {
 		return diagnostics, err
 	}
 
-	for _, entry := range computed {
+	for _, buildErr := range buildErrs {
+		if doc.URI != buildErr.Span.URI {
+			// Ignore buildErr that doesn't target doc
+			continue
+		}
 		diagnostics = append(diagnostics, protocol.Diagnostic{
-			Range:    *posToRange(entry.Line, entry.Span),
+			Range:    buildErr.Span.ToLocation().Range,
 			Severity: protocol.DiagnosticSeverityError,
 			Source:   "gnols",
-			Message:  entry.Msg,
-			Code:     entry.Tool,
+			Message:  buildErr.Msg,
+			Code:     buildErr.Tool,
 		})
 	}
 
-	slog.Info("diagnostics", "parsed", computed, "count", len(diagnostics))
+	slog.Info("diagnostics", "parsed", buildErrs, "count", len(diagnostics))
 	return diagnostics, nil
 }

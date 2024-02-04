@@ -12,7 +12,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/jdkato/gnols/internal/store"
+	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
 
@@ -22,6 +22,7 @@ var ErrNoGno = errors.New("no gno binary found")
 //
 // TODO: Should we install / update our own copy of gno?
 type BinManager struct {
+	workspaceFolder  string // path to project
 	gno              string // path to gno binary
 	gnokey           string // path to gnokey binary
 	gopls            string // path to gopls binary
@@ -32,9 +33,7 @@ type BinManager struct {
 
 // BuildError is an error returned by the `gno build` command.
 type BuildError struct {
-	Path string
-	Line int
-	Span []int
+	Span Span
 	Msg  string
 	Tool string
 }
@@ -52,7 +51,7 @@ type BuildError struct {
 // `build`: Whether to build Gno files on save.
 //
 // NOTE: Unlike `gnoBin`, `gnokeyBin` is optional.
-func NewBinManager(gnoBin, gnokeyBin, goplsBin, root string, precompile, build bool) (*BinManager, error) {
+func NewBinManager(workspaceFolder, gnoBin, gnokeyBin, goplsBin, root string, precompile, build bool) (*BinManager, error) {
 	if gnoBin == "" {
 		var err error
 		gnoBin, err = exec.LookPath("gno")
@@ -67,6 +66,7 @@ func NewBinManager(gnoBin, gnokeyBin, goplsBin, root string, precompile, build b
 		goplsBin, _ = exec.LookPath("gopls")
 	}
 	return &BinManager{
+		workspaceFolder:  workspaceFolder,
 		gno:              gnoBin,
 		gnokey:           gnokeyBin,
 		gopls:            goplsBin,
@@ -95,9 +95,9 @@ func (m *BinManager) Format(gnoFile string) ([]byte, error) {
 	return format.Source([]byte(gnoFile))
 }
 
-// Precompile a Gno package: gno precompile <dir>.
-func (m *BinManager) Precompile(gnoDir string) ([]byte, error) {
-	args := []string{"precompile", gnoDir}
+// Precompile a Gno package: gno precompile <m.workspaceFolder>.
+func (m *BinManager) Precompile() ([]byte, error) {
+	args := []string{"precompile", m.workspaceFolder}
 	if m.shouldBuild {
 		args = append(args, "-gobuild")
 	}
@@ -128,20 +128,15 @@ func (m *BinManager) RunTest(pkg, name string) ([]byte, error) {
 //
 // In practice, this means:
 //
-// 1. Precompile the file;
-// 2. build the file (using -gobuild precompile flag);
-// 3. parse the errors; and
-// 4. recompute the offsets (.go -> .gno).
-//
-// TODO: is this the best way?
-func (m *BinManager) Lint(doc *store.Document) ([]BuildError, error) {
-	pkg := pkgFromFile(doc.Path)
-
+// 1. Precompile
+// 2. parse the errors
+// 3. recompute the offsets (.gen.go -> .gno).
+func (m *BinManager) Lint() ([]BuildError, error) {
 	if !m.shouldPrecompile && !m.shouldBuild {
 		return []BuildError{}, nil
 	}
-	preOut, _ := m.Precompile(pkg)
-	return parseError(doc, string(preOut), "precompile")
+	preOut, _ := m.Precompile() // TODO handle error?
+	return m.parseErrors(string(preOut), "precompile")
 }
 
 type GoplsDefinition struct {
@@ -194,6 +189,22 @@ func (s Span) GenGo2Gno() Span {
 	s.End.Line -= 5
 	s.End.Column--
 	return s
+}
+
+func (s Span) ToLocation() protocol.Location {
+	return protocol.Location{
+		URI: s.URI,
+		Range: protocol.Range{
+			Start: protocol.Position{
+				Line:      s.Start.Line,
+				Character: s.Start.Column,
+			},
+			End: protocol.Position{
+				Line:      s.End.Line,
+				Character: s.End.Column,
+			},
+		},
+	}
 }
 
 // Definition returns the definition of the symbol at the given position

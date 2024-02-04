@@ -24,17 +24,5 @@ func (h *handler) handleTextDocumentDefinition(ctx context.Context, reply jsonrp
 		return replyErr(ctx, reply, err)
 	}
 
-	return reply(ctx, protocol.Location{
-		URI: def.Span.URI,
-		Range: protocol.Range{
-			Start: protocol.Position{
-				Line:      def.Span.Start.Line,
-				Character: def.Span.Start.Column,
-			},
-			End: protocol.Position{
-				Line:      def.Span.End.Line,
-				Character: def.Span.End.Column,
-			},
-		},
-	}, nil)
+	return reply(ctx, def.Span.ToLocation(), nil)
 }

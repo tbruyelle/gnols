@@ -18,6 +18,9 @@ type handler struct {
 	binManager *gno.BinManager
 	// NOTE(tb): See why [here](https://github.com/tbruyelle/gnols/issues/11)
 	configLoaded chan struct{}
+
+	// workspaceFolder contains the path of the project.
+	workspaceFolder string
 }
 
 func NewHandler(connPool jsonrpc2.Conn) jsonrpc2.Handler {
@@ -77,6 +80,11 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 	if err := json.Unmarshal(req.Params(), &params); err != nil {
 		return replyBadJSON(ctx, reply, err)
 	}
+	// NOTE(tb): params.RootURI is deprecated in favor of params.WorkspaceFolders,
+	// but this one is not filled by vim-lsp. Maybe we should check it first and
+	// fallback to params.RootURI.
+	h.workspaceFolder = params.RootURI.Filename()
+	slog.Info("Initialize", "params", params, "workspaceFolder", h.workspaceFolder)
 
 	return reply(ctx, protocol.InitializeResult{
 		Capabilities: protocol.ServerCapabilities{
