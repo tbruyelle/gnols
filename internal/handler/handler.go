@@ -83,7 +83,7 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 	// NOTE(tb): params.RootURI is deprecated in favor of params.WorkspaceFolders,
 	// but this one is not filled by vim-lsp. Maybe we should check it first and
 	// fallback to params.RootURI.
-	h.workspaceFolder = params.RootURI.Filename()
+	h.workspaceFolder = params.RootURI.Filename() //nolint:staticcheck
 	slog.Info("Initialize", "params", params, "workspaceFolder", h.workspaceFolder)
 
 	return reply(ctx, protocol.InitializeResult{
