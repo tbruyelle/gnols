@@ -49,7 +49,7 @@ func (m *BinManager) parseErrors(output, cmd string) ([]BuildError, error) {
 			return nil, err
 		}
 		msg := match[4]
-		slog.Info("parsing", "path", path, "line", line, "column", column, "msg", msg)
+		slog.Info("parsing errors", "path", path, "line", line, "column", column, "msg", msg)
 		span := Span{
 			URI: uri.File(filepath.Join(m.workspaceFolder, path)),
 			Start: Location{
