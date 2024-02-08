@@ -1,7 +1,6 @@
 package gno
 
 import (
-	"log/slog"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -49,7 +48,6 @@ func (m *BinManager) parseErrors(output, cmd string) ([]BuildError, error) {
 			return nil, err
 		}
 		msg := match[4]
-		slog.Info("parsing errors", "path", path, "line", line, "column", column, "msg", msg)
 		span := Span{
 			URI: uri.File(filepath.Join(m.workspaceFolder, path)),
 			Start: Location{
@@ -61,8 +59,10 @@ func (m *BinManager) parseErrors(output, cmd string) ([]BuildError, error) {
 				Column: uint32(column),
 			},
 		}
-		// Shift from .gen.go to .gno
-		span = span.GenGo2Gno()
+		if span.IsGenGo() {
+			// Shift from .gen.go to .gno
+			span = span.GenGo2Gno()
+		}
 		errors = append(errors, BuildError{
 			Span: span,
 			Msg:  msg,

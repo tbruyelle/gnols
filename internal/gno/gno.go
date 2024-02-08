@@ -163,7 +163,7 @@ func (s Span) Position() string {
 
 // GenGo2Gno shifts the .gno Span s into a .gen.go Span.
 func (s Span) Gno2GenGo() Span {
-	if strings.Contains(string(s.URI), ".gen.go") {
+	if s.IsGenGo() {
 		panic(fmt.Sprintf("span %v is not a .gno referrence", s))
 	}
 	// Remove .gen.go extention, we want to target the gno file
@@ -176,9 +176,13 @@ func (s Span) Gno2GenGo() Span {
 	return s
 }
 
+func (s Span) IsGenGo() bool {
+	return strings.Contains(string(s.URI), ".gen.go")
+}
+
 // GenGo2Gno shifts the .gen.go Span s into a .gno Span.
 func (s Span) GenGo2Gno() Span {
-	if !strings.Contains(string(s.URI), ".gen.go") {
+	if !s.IsGenGo() {
 		panic(fmt.Sprintf("span %v is not a .gen.go referrence", s))
 	}
 	// Remove .gen.go extention, we want to target the gno file

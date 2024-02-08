@@ -49,6 +49,6 @@ func (h *handler) getDiagnostics(doc *store.Document) ([]protocol.Diagnostic, er
 		})
 	}
 
-	slog.Info("diagnostics", "parsed", buildErrs, "count", len(diagnostics))
+	slog.Info("diagnostics", "parsed", diagnostics, "count", len(diagnostics))
 	return diagnostics, nil
 }
