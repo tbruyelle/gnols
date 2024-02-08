@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/jdkato/gnols/internal/handler"
@@ -12,10 +11,11 @@ import (
 
 func main() { os.Exit(main1()) }
 
-func main1() int {
+func main1() (ret int) {
 	defer func() {
 		if r := recover(); r != nil {
-			slog.Error("panic", "recover", r)
+			fmt.Fprintln(os.Stderr, "panic", r)
+			ret = 2
 		}
 	}()
 	conn := jsonrpc2.NewConn(jsonrpc2.NewStream(stdrwc{}))
@@ -25,9 +25,9 @@ func main1() int {
 
 	if err := handlerSrv.ServeStream(context.Background(), conn); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return 1
+		ret = 1
 	}
-	return 0
+	return
 }
 
 type stdrwc struct{}
