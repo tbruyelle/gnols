@@ -75,12 +75,12 @@ linters:
     - goprintffuncname
     - gosec
     - makezero
-    - nakedret
+#   - nakedret
     - nilerr
     - nilnil
     - noctx
     - nolintlint
-    - nonamedreturns
+#   - nonamedreturns
     - nosprintfhostport
     - predeclared
     - promlinter
