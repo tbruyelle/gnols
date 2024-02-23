@@ -17,16 +17,9 @@ var errorRe = regexp.MustCompile(`(?m)^([^#]+?):(\d+):(\d+):(.+)$`)
 // parseErrors parses the output of the `gno precompile -gobuild` command for
 // errors.
 //
-// They look something like this:
-//
+// The format is:
 // ```
-// command-line-arguments
-// # command-line-arguments
-// <file>:20:9: undefined: strin
-//
-// <pkg_path>: build pkg: std go compiler: exit status 1
-//
-// 1 go build errors
+// <file.gno>:<line>:<col>: <error>
 // ```
 func (m *BinManager) parseErrors(output, cmd string) ([]BuildError, error) {
 	errors := []BuildError{}
@@ -58,10 +51,6 @@ func (m *BinManager) parseErrors(output, cmd string) ([]BuildError, error) {
 				Line:   uint32(line),
 				Column: uint32(column),
 			},
-		}
-		if span.IsGenGo() {
-			// Shift from .gen.go to .gno
-			span = span.GenGo2Gno()
 		}
 		errors = append(errors, BuildError{
 			Span: span,

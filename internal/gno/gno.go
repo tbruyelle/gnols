@@ -16,6 +16,11 @@ import (
 	"go.lsp.dev/uri"
 )
 
+const (
+	genGoExt       = ".gen.go"
+	genGoLineShift = 4
+)
+
 var ErrNoGno = errors.New("no gno binary found")
 
 // BinManager is a wrapper for the gno binary and related tooling.
@@ -167,17 +172,15 @@ func (s Span) Gno2GenGo() Span {
 		panic(fmt.Sprintf("span %v is not a .gno referrence", s))
 	}
 	// Remove .gen.go extention, we want to target the gno file
-	s.URI = uri.New(string(s.URI) + ".gen.go")
-	// Shift lines & columns
-	s.Start.Line += 5
-	s.Start.Column++
-	s.End.Line += 5
-	s.End.Column++
+	s.URI = uri.New(string(s.URI) + genGoExt)
+	// Shift lines
+	s.Start.Line += genGoLineShift
+	s.End.Line += genGoLineShift
 	return s
 }
 
 func (s Span) IsGenGo() bool {
-	return strings.Contains(string(s.URI), ".gen.go")
+	return strings.Contains(string(s.URI), genGoExt)
 }
 
 // GenGo2Gno shifts the .gen.go Span s into a .gno Span.
@@ -186,27 +189,43 @@ func (s Span) GenGo2Gno() Span {
 		panic(fmt.Sprintf("span %v is not a .gen.go referrence", s))
 	}
 	// Remove .gen.go extention, we want to target the gno file
-	s.URI = uri.New(strings.ReplaceAll(string(s.URI), ".gen.go", ""))
-	// Shift lines & columns
-	s.Start.Line -= 5
-	s.Start.Column--
-	s.End.Line -= 5
-	s.End.Column--
+	s.URI = uri.New(strings.ReplaceAll(string(s.URI), genGoExt, ""))
+	// Shift lines
+	s.Start.Line -= genGoLineShift
+	s.End.Line -= genGoLineShift
 	return s
 }
 
+// ToLocation converts s to a protocol.Location.
+// NOTE: In LSP, a position inside a document is expressed as a zero-based line
+// and character offset, thus we need to decrement by one the span Start and
+// End position.
 func (s Span) ToLocation() protocol.Location {
 	return protocol.Location{
 		URI: s.URI,
 		Range: protocol.Range{
 			Start: protocol.Position{
-				Line:      s.Start.Line,
-				Character: s.Start.Column,
+				Line:      s.Start.Line - 1,
+				Character: s.Start.Column - 1,
 			},
 			End: protocol.Position{
-				Line:      s.End.Line,
-				Character: s.End.Column,
+				Line:      s.End.Line - 1,
+				Character: s.End.Column - 1,
 			},
+		},
+	}
+}
+
+// SpanFromLSPLocation converts a protocol.Location to a Span.
+// NOTE: In LSP, a position inside a document is expressed as a zero-based line
+// and character offset, thus we need to decrement by one the span Start and
+// End position.
+func SpanFromLSPLocation(uri uri.URI, line, col uint32) Span {
+	return Span{
+		URI: uri,
+		Start: Location{
+			Line:   line + 1,
+			Column: col + 1,
 		},
 	}
 }
@@ -220,13 +239,7 @@ func (s Span) ToLocation() protocol.Location {
 // * move gnols stuff in an other packahe
 func (m *BinManager) Definition(ctx context.Context, uri uri.URI, line, col uint32) (GoplsDefinition, error) {
 	// Build a reference to the .gen.gno file position
-	target := Span{
-		URI: uri,
-		Start: Location{
-			Line:   line,
-			Column: col,
-		},
-	}.Gno2GenGo().Position()
+	target := SpanFromLSPLocation(uri, line, col).Gno2GenGo().Position()
 	slog.Info("fetching definition", "uri", uri, "line", line, "col", col, "target", target)
 
 	// Prepare call to gopls
