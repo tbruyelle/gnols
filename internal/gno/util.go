@@ -12,6 +12,8 @@ import (
 // (see `parseError` below).
 //
 // TODO: Maybe there's a way to get this in a structured format?
+// Yes, when this change is released: https://go-review.googlesource.com/c/go/+/536397
+// related issue: https://github.com/golang/go/issues/62067
 var errorRe = regexp.MustCompile(`(?m)^([^#]+?):(\d+):(\d+):(.+)$`)
 
 // parseErrors parses the output of the `gno precompile -gobuild` command for
