@@ -16,7 +16,7 @@ import (
 // related issue: https://github.com/golang/go/issues/62067
 var errorRe = regexp.MustCompile(`(?m)^([^#]+?):(\d+):(\d+):(.+)$`)
 
-// parseErrors parses the output of the `gno precompile -gobuild` command for
+// parseErrors parses the output of the `gno transpile -gobuild` command for
 // errors.
 //
 // The format is:

@@ -64,7 +64,7 @@ that supports the Language Server Protocol.
     </tr>
     <tr>
         <td width="50%">
-            Real-time precompile & build errors in your Gno files.
+            Real-time transpile & build errors in your Gno files.
         </td>
         <td width="50%">
             Format Gno files with the tool of your choice.

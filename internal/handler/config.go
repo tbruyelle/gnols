@@ -29,11 +29,11 @@ func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrp
 	gnokeyBin, _ := settings["gnokey"].(string)
 	goplsBin, _ := settings["gopls"].(string)
 
-	precompile, _ := settings["precompileOnSave"].(bool)
+	transpile, _ := settings["transpileOnSave"].(bool)
 	build, _ := settings["buildOnSave"].(bool)
 	root, _ := settings["root"].(string)
 
-	h.binManager, err = gno.NewBinManager(h.workspaceFolder, gnoBin, gnokeyBin, goplsBin, root, precompile, build)
+	h.binManager, err = gno.NewBinManager(h.workspaceFolder, gnoBin, gnokeyBin, goplsBin, root, transpile, build)
 	if err != nil {
 		return replyErr(ctx, reply, err)
 	}

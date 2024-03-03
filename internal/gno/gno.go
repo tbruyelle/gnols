@@ -27,13 +27,13 @@ var ErrNoGno = errors.New("no gno binary found")
 //
 // TODO: Should we install / update our own copy of gno?
 type BinManager struct {
-	workspaceFolder  string // path to project
-	gno              string // path to gno binary
-	gnokey           string // path to gnokey binary
-	gopls            string // path to gopls binary
-	root             string // path to gno repository
-	shouldPrecompile bool   // whether to precompile on save
-	shouldBuild      bool   // whether to build on save
+	workspaceFolder string // path to project
+	gno             string // path to gno binary
+	gnokey          string // path to gnokey binary
+	gopls           string // path to gopls binary
+	root            string // path to gno repository
+	shouldTranspile bool   // whether to transpile on save
+	shouldBuild     bool   // whether to build on save
 }
 
 // BuildError is an error returned by the `gno build` command.
@@ -52,11 +52,11 @@ type BuildError struct {
 // `gnokeyBin`: The path to the `gnokey` binary.
 // `goplsBin`: The path to the `gopls` binary.
 // `root`: The path to the `gno` repository
-// `precompile`: Whether to precompile Gno files on save.
+// `transpile`: Whether to transpile Gno files on save.
 // `build`: Whether to build Gno files on save.
 //
 // NOTE: Unlike `gnoBin`, `gnokeyBin` is optional.
-func NewBinManager(workspaceFolder, gnoBin, gnokeyBin, goplsBin, root string, precompile, build bool) (*BinManager, error) {
+func NewBinManager(workspaceFolder, gnoBin, gnokeyBin, goplsBin, root string, transpile, build bool) (*BinManager, error) {
 	if gnoBin == "" {
 		var err error
 		gnoBin, err = exec.LookPath("gno")
@@ -71,13 +71,13 @@ func NewBinManager(workspaceFolder, gnoBin, gnokeyBin, goplsBin, root string, pr
 		goplsBin, _ = exec.LookPath("gopls")
 	}
 	return &BinManager{
-		workspaceFolder:  workspaceFolder,
-		gno:              gnoBin,
-		gnokey:           gnokeyBin,
-		gopls:            goplsBin,
-		root:             root,
-		shouldPrecompile: precompile,
-		shouldBuild:      build,
+		workspaceFolder: workspaceFolder,
+		gno:             gnoBin,
+		gnokey:          gnokeyBin,
+		gopls:           goplsBin,
+		root:            root,
+		shouldTranspile: transpile,
+		shouldBuild:     build,
 	}, nil
 }
 
@@ -100,9 +100,9 @@ func (m *BinManager) Format(gnoFile string) ([]byte, error) {
 	return format.Source([]byte(gnoFile))
 }
 
-// Precompile a Gno package: gno precompile <m.workspaceFolder>.
-func (m *BinManager) Precompile() ([]byte, error) {
-	args := []string{"precompile", m.workspaceFolder}
+// Transpile a Gno package: gno transpile <m.workspaceFolder>.
+func (m *BinManager) Transpile() ([]byte, error) {
+	args := []string{"transpile", m.workspaceFolder}
 	if m.shouldBuild {
 		args = append(args, "-gobuild")
 	}
@@ -129,19 +129,18 @@ func (m *BinManager) RunTest(pkg, name string) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-// Lint precompiles and builds a Gno package and returns any errors.
+// Lint transpiles and builds a Gno package and returns any errors.
 //
 // In practice, this means:
 //
-// 1. Precompile
-// 2. parse the errors
-// 3. recompute the offsets (.gen.go -> .gno).
+// 1. Transpile
+// 2. Parse the errors
 func (m *BinManager) Lint() ([]BuildError, error) {
-	if !m.shouldPrecompile && !m.shouldBuild {
+	if !m.shouldTranspile && !m.shouldBuild {
 		return []BuildError{}, nil
 	}
-	preOut, _ := m.Precompile() // TODO handle error?
-	return m.parseErrors(string(preOut), "precompile")
+	preOut, _ := m.Transpile() // TODO handle error?
+	return m.parseErrors(string(preOut), "transpile")
 }
 
 type GoplsDefinition struct {
