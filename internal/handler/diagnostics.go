@@ -4,19 +4,18 @@ import (
 	"context"
 	"log/slog"
 
-	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
 	"github.com/jdkato/gnols/internal/store"
 )
 
-func (h *handler) publishDianostics(ctx context.Context, conn jsonrpc2.Conn, doc *store.Document) error {
+func (h *handler) publishDianostics(ctx context.Context, doc *store.Document) {
 	diagnostics, err := h.getDiagnostics(doc)
 	if err != nil {
-		return err
+		h.notifyErr(ctx, err)
+		return
 	}
-	return conn.Notify(
-		ctx,
+	h.notify(ctx,
 		protocol.MethodTextDocumentPublishDiagnostics,
 		&protocol.PublishDiagnosticsParams{
 			URI:         doc.URI,

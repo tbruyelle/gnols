@@ -121,3 +121,18 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 func (h *handler) handleShutdown(ctx context.Context, reply jsonrpc2.Replier, _ jsonrpc2.Request) error {
 	return reply(ctx, nil, h.connPool.Close())
 }
+
+func (h *handler) notify(ctx context.Context, method string, params any) {
+	err := h.connPool.Notify(ctx, method, params)
+	if err != nil {
+		slog.Error("notify error", "err", err)
+	}
+}
+
+func (h *handler) notifyErr(ctx context.Context, err error) {
+	slog.Error(err.Error())
+	h.notify(ctx, protocol.MethodWindowShowMessage, &protocol.ShowMessageParams{
+		Message: err.Error(),
+		Type:    protocol.MessageTypeError,
+	})
+}

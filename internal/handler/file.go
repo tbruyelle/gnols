@@ -19,12 +19,9 @@ func (h *handler) handleTextDocumentDidOpen(ctx context.Context, reply jsonrpc2.
 
 	doc, err := h.documents.Save(params.TextDocument.URI, params.TextDocument.Text)
 	if err != nil {
-		return replyErr(ctx, reply, fmt.Errorf("documents.Save: %w", err))
+		return replyErr(ctx, reply, fmt.Errorf("documents.Save uri=%s: %w", params.TextDocument.URI, err))
 	}
-
-	if err := h.publishDianostics(ctx, h.connPool, doc); err != nil {
-		slog.Error("publishDianostics", "doc", doc.Path, "err", err)
-	}
+	h.publishDianostics(ctx, doc)
 	return reply(ctx, nil, nil)
 }
 
@@ -60,10 +57,7 @@ func (h *handler) handleTextDocumentDidSave(ctx context.Context, reply jsonrpc2.
 		slog.Info("new doc saved", "path", newDoc.Path)
 		doc = newDoc
 	}
-
-	if err := h.publishDianostics(ctx, h.connPool, doc); err != nil {
-		slog.Error("publishDianostics", "doc", doc.Path, "err", err)
-	}
+	h.publishDianostics(ctx, doc)
 	return reply(ctx, nil, nil)
 }
 

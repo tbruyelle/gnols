@@ -1,6 +1,7 @@
 package gno
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -35,12 +36,12 @@ func (m *BinManager) parseErrors(output, cmd string) ([]BuildError, error) {
 		path := match[1]
 		line, err := strconv.Atoi(match[2])
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parseErrors '%s': %w", match, err)
 		}
 
 		column, err := strconv.Atoi(match[3])
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("parseErrors '%s': %w", match, err)
 		}
 		msg := match[4]
 		span := Span{

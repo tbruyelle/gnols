@@ -106,7 +106,11 @@ func (m *BinManager) Transpile() ([]byte, error) {
 	if m.shouldBuild {
 		args = append(args, "-gobuild")
 	}
-	return exec.Command(m.gno, args...).CombinedOutput() //nolint:gosec
+	bz, err := exec.Command(m.gno, args...).CombinedOutput() //nolint:gosec
+	if err != nil {
+		return bz, fmt.Errorf("running '%s %s': %w", m.gno, strings.Join(args, " "), err)
+	}
+	return bz, nil
 }
 
 // RunTest runs a Gno test:
@@ -139,8 +143,19 @@ func (m *BinManager) Lint() ([]BuildError, error) {
 	if !m.shouldTranspile && !m.shouldBuild {
 		return []BuildError{}, nil
 	}
-	preOut, _ := m.Transpile() // TODO handle error?
-	return m.parseErrors(string(preOut), "transpile")
+
+	preOut, errTranspile := m.Transpile()
+	// parse errors even if errTranspile!=nil bc that's always the case if
+	// there's errors.
+	errors, errParse := m.parseErrors(string(preOut), "transpile")
+	if errParse != nil {
+		return nil, errParse
+	}
+	if len(errors) == 0 && errTranspile != nil {
+		// no errors but errTranspile!=nil, this isn't the expected error
+		return nil, errTranspile
+	}
+	return errors, nil
 }
 
 type GoplsDefinition struct {
