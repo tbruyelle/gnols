@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -88,9 +89,23 @@ func (m *BinManager) GnoBin() string {
 	return m.gno
 }
 
-// Gopls returns the path to the `gopls` binary.
-func (m *BinManager) Gopls() string {
-	return m.gopls
+func (m *BinManager) RunGopls(ctx context.Context, args ...string) (io.Reader, error) {
+	// Prepare call to gopls
+	cmd := exec.CommandContext(ctx, m.gopls, args...) //nolint:gosec
+	// *.gen.go files have the gno build tag.
+	// Must append to os.Environ() or else gopls doesn't find the go binary.
+	const goFlags = "GOFLAGS=-tags=gno"
+	cmd.Env = append(os.Environ(), goFlags)
+	var buf, bufErr bytes.Buffer
+	cmd.Stdout = &buf
+	cmd.Stderr = &bufErr
+	// Run command
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("'gopls %s' error :%s:%w", strings.Join(args, " "),
+			bufErr.String(), err)
+	}
+	return &buf, nil
 }
 
 // Format a Gno file using std formatter.
@@ -248,33 +263,20 @@ func SpanFromLSPLocation(uri uri.URI, line, col uint32) Span {
 // using the `gopls` tool.
 //
 // TODO:
-//
-// * add handy BinManager.RunGoPls
-// * move gnols stuff in an other packahe
+// * move gnols stuff in an other package
 func (m *BinManager) Definition(ctx context.Context, uri uri.URI, line, col uint32) (GoplsDefinition, error) {
 	// Build a reference to the .gen.gno file position
 	target := SpanFromLSPLocation(uri, line, col).Gno2GenGo().Position()
 	slog.Info("fetching definition", "uri", uri, "line", line, "col", col, "target", target)
 
-	// Prepare call to gopls
-	cmd := exec.CommandContext(ctx, m.gopls, "definition", "-json", target) //nolint:gosec
-	// *.gen.go files have the gno build tag.
-	// Must append to os.Environ() or else gopls doesn't find the go binary.
-	cmd.Env = append(os.Environ(), "GOFLAGS=-tags=gno")
-	var buf bytes.Buffer
-	cmd.Stdout = &buf
-	var bufErr bytes.Buffer
-	cmd.Stderr = &bufErr
-
-	// Run command
-	err := cmd.Run()
+	stdout, err := m.RunGopls(ctx, "definition", "-json", target)
 	if err != nil {
-		return GoplsDefinition{}, fmt.Errorf("'gopls definition %s' error :%s:%w", target, bufErr.String(), err)
+		return GoplsDefinition{}, err
 	}
 
 	// Parse output
 	var def GoplsDefinition
-	if err := json.Unmarshal(buf.Bytes(), &def); err != nil {
+	if err := json.NewDecoder(stdout).Decode(&def); err != nil {
 		return GoplsDefinition{}, fmt.Errorf("unexpected gopls definition output: %w", err)
 	}
 	// Turn back span to .gno file.
