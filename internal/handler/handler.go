@@ -57,6 +57,8 @@ func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrp
 		return h.handleTextDocumentDidSave(ctx, reply, req)
 	case protocol.MethodTextDocumentDefinition:
 		return h.handleTextDocumentDefinition(ctx, reply, req)
+	case protocol.MethodTextDocumentReferences:
+		return h.handleTextDocumentReferrences(ctx, reply, req)
 	case protocol.MethodTextDocumentCompletion:
 		return h.handleTextDocumentCompletion(ctx, reply, req)
 	case protocol.MethodTextDocumentHover:
@@ -98,6 +100,9 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 			DefinitionProvider: &protocol.DefinitionTextDocumentClientCapabilities{
 				DynamicRegistration: false,
 				LinkSupport:         false,
+			},
+			ReferencesProvider: &protocol.ReferencesTextDocumentClientCapabilities{
+				DynamicRegistration: false,
 			},
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{"."},

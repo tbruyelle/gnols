@@ -7,10 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
-	"io"
 	"log/slog"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"go.lsp.dev/protocol"
@@ -89,7 +90,7 @@ func (m *BinManager) GnoBin() string {
 	return m.gno
 }
 
-func (m *BinManager) RunGopls(ctx context.Context, args ...string) (io.Reader, error) {
+func (m *BinManager) RunGopls(ctx context.Context, args ...string) ([]byte, error) {
 	// Prepare call to gopls
 	cmd := exec.CommandContext(ctx, m.gopls, args...) //nolint:gosec
 	// *.gen.go files have the gno build tag.
@@ -105,7 +106,7 @@ func (m *BinManager) RunGopls(ctx context.Context, args ...string) (io.Reader, e
 		return nil, fmt.Errorf("'gopls %s' error :%s:%w", strings.Join(args, " "),
 			bufErr.String(), err)
 	}
-	return &buf, nil
+	return buf.Bytes(), nil
 }
 
 // Format a Gno file using std formatter.
@@ -245,6 +246,20 @@ func (s Span) ToLocation() protocol.Location {
 	}
 }
 
+func NewSpan(path string, line, col1, col2 int) Span {
+	return Span{
+		URI: uri.File(path),
+		Start: Location{
+			Line:   uint32(line),
+			Column: uint32(col1),
+		},
+		End: Location{
+			Line:   uint32(line),
+			Column: uint32(col2),
+		},
+	}
+}
+
 // SpanFromLSPLocation converts a protocol.Location to a Span.
 // NOTE: In LSP, a position inside a document is expressed as a zero-based line
 // and character offset, thus we need to decrement by one the span Start and
@@ -259,28 +274,74 @@ func SpanFromLSPLocation(uri uri.URI, line, col uint32) Span {
 	}
 }
 
+var rePosition = regexp.MustCompile(`(?m)^(\S+):(\d+):(\d+)-(\d+)$`)
+
+func SpansFromPositions(positions string) ([]Span, error) {
+	var spans []Span
+	matches := rePosition.FindAllStringSubmatch(positions, -1)
+	for _, match := range matches {
+		filename := match[1]
+		line, err := strconv.Atoi(match[2])
+		if err != nil {
+			return nil, fmt.Errorf("SpanFromPosition '%s': %w", match, err)
+		}
+
+		col1, err := strconv.Atoi(match[3])
+		if err != nil {
+			return nil, fmt.Errorf("SpanFromPosition '%s': %w", match, err)
+		}
+		col2, err := strconv.Atoi(match[4])
+		if err != nil {
+			return nil, fmt.Errorf("SpanFromPosition '%s': %w", match, err)
+		}
+		spans = append(spans, NewSpan(filename, line, col1, col2))
+	}
+	return spans, nil
+}
+
 // Definition returns the definition of the symbol at the given position
 // using the `gopls` tool.
 //
 // TODO:
 // * move gnols stuff in an other package
 func (m *BinManager) Definition(ctx context.Context, uri uri.URI, line, col uint32) (GoplsDefinition, error) {
-	// Build a reference to the .gen.gno file position
 	target := SpanFromLSPLocation(uri, line, col).Gno2GenGo().Position()
 	slog.Info("fetching definition", "uri", uri, "line", line, "col", col, "target", target)
 
-	stdout, err := m.RunGopls(ctx, "definition", "-json", target)
+	bz, err := m.RunGopls(ctx, "definition", "-json", target)
 	if err != nil {
 		return GoplsDefinition{}, err
 	}
 
 	// Parse output
 	var def GoplsDefinition
-	if err := json.NewDecoder(stdout).Decode(&def); err != nil {
+	if err := json.Unmarshal(bz, &def); err != nil {
 		return GoplsDefinition{}, fmt.Errorf("unexpected gopls definition output: %w", err)
 	}
 	// Turn back span to .gno file.
 	def.Span = def.Span.GenGo2Gno()
 	slog.Info("definition found", "position", def.Span.Position())
 	return def, nil
+}
+
+// References returns the references of the symbol at the given position using
+// the `gopls` tool.
+func (m *BinManager) References(ctx context.Context, uri uri.URI, line, col uint32) ([]Span, error) {
+	target := SpanFromLSPLocation(uri, line, col).Gno2GenGo().Position()
+	slog.Info("fetching references", "uri", uri, "line", line, "col", col, "target", target)
+
+	bz, err := m.RunGopls(ctx, "references", "-d", target)
+	if err != nil {
+		return nil, err
+	}
+	spans, err := SpansFromPositions(string(bz))
+	if err != nil {
+		return nil, err
+	}
+	// Turn back span to .gno file.
+	for i := 0; i < len(spans); i++ {
+		spans[i] = spans[i].GenGo2Gno()
+	}
+	slog.Info("found references", "spans", spans)
+	return spans, nil
 }
