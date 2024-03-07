@@ -18,7 +18,7 @@ import (
 
 const (
 	genGoExt       = ".gen.go"
-	genGoLineShift = 4
+	genGoLineShift = 5
 )
 
 var ErrNoGno = errors.New("no gno binary found")
