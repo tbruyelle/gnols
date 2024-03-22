@@ -26,3 +26,7 @@ require (
 	golang.org/x/tools v0.1.12 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.lsp.dev/jsonrpc2 => /home/tom/gohack/go.lsp.dev/jsonrpc2
+
+replace go.lsp.dev/protocol => /home/tom/gohack/go.lsp.dev/protocol

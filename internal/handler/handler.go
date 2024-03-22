@@ -40,6 +40,7 @@ func (h *handler) getBinManager() *gno.BinManager {
 }
 
 func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+	slog.Info("handle", "method", req.Method())
 	switch req.Method() {
 	case protocol.MethodInitialize:
 		return h.handleInitialize(ctx, reply, req)
