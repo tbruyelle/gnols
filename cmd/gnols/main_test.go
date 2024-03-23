@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"testing"
@@ -26,13 +27,21 @@ func (b buffer) Close() error {
 
 func TestScripts(t *testing.T) {
 	// TODO declare 2 buffer, one for the client and one for the server
-	pr, pw := io.Pipe()
-	buf := buffer{
-		PipeWriter: pw,
-		PipeReader: pr,
+	clientRead, serverWrite := io.Pipe()
+	serverRead, clientWrite := io.Pipe()
+	serverBuf := buffer{
+		PipeWriter: serverWrite,
+		PipeReader: serverRead,
 	}
-	conn := jsonrpc2.NewConn(jsonrpc2.NewStream(buf))
-	handlerSrv := jsonrpc2.HandlerServer(handler.NewHandler(conn))
+	clientBuf := buffer{
+		PipeWriter: clientWrite,
+		PipeReader: clientRead,
+	}
+	serverConn := jsonrpc2.NewConn(jsonrpc2.NewStream(serverBuf))
+	handlerSrv := jsonrpc2.HandlerServer(handler.NewHandler(serverConn))
+	clientConn := jsonrpc2.NewConn(jsonrpc2.NewStream(clientBuf))
+	ctx, cancel := context.WithCancel(context.Background())
+	// var output bytes.Buffer
 
 	testscript.Run(t, testscript.Params{
 		Setup: func(env *testscript.Env) error {
@@ -42,11 +51,20 @@ func TestScripts(t *testing.T) {
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
 			"runLspServer": func(ts *testscript.TestScript, neg bool, args []string) {
 				go func() {
-					if err := handlerSrv.ServeStream(context.Background(), conn); err != nil {
-						// ts.Fatalf("Server error: %v", err)
-						fmt.Println("ERROR", err)
+					ctx := context.WithValue(ctx, "name", "server")
+					if err := handlerSrv.ServeStream(ctx, serverConn); !errors.Is(err, io.ErrClosedPipe) {
+						ts.Fatalf("Server error: %v", err)
 					}
 				}()
+				clientConn.Go(context.WithValue(ctx, "name", "client"), nil)
+				// go func() {
+				// r := bufio.NewScanner(clientBuf.PipeReader)
+				// for r.Scan() {
+				// fmt.Println("RCV", r.Text())
+				// output.WriteString(r.Text())
+				// }
+				// fmt.Println("END OF READ")
+				// }()
 			},
 
 			"lsp": func(ts *testscript.TestScript, neg bool, args []string) {
@@ -54,15 +72,23 @@ func TestScripts(t *testing.T) {
 				params := &protocol.InitializeParams{
 					RootURI: uri.File(ts.Getenv("WORK")),
 				}
-				res := make(map[string]any)
-				id, err := conn.Call(context.Background(), protocol.MethodInitialize, params, res)
+				var res protocol.InitializeResult
+				ctx := context.WithValue(ctx, "name", "client")
+				id, err := clientConn.Call(ctx, protocol.MethodInitialize, params, &res)
 				if err != nil {
 					ts.Fatalf("Error call: %v", err)
 				}
 				fmt.Println("CALLID", id, res)
 			},
 			"assertRcv": func(ts *testscript.TestScript, neg bool, args []string) {
-				fmt.Println("RCV", buf)
+				// fmt.Println("RCV", buf)
+			},
+			"stopLspServer": func(ts *testscript.TestScript, neg bool, args []string) {
+				fmt.Println("STOP")
+				clientConn.Close()
+				serverConn.Close()
+				fmt.Println("STOPPED")
+				cancel()
 			},
 		},
 	})

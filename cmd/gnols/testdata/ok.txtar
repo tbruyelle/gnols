@@ -4,6 +4,8 @@ lsp
 
 assertRcv
 
+stopLspServer
+
 -- gno.mod --
 module gnotest
 -- gnotest.gno --
