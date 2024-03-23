@@ -52,19 +52,18 @@ func TestScripts(t *testing.T) {
 		},
 		Dir: "testdata",
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
-			"server": func(ts *testscript.TestScript, neg bool, args []string) {
+			"server": func(ts *testscript.TestScript, neg bool, args []string) { //nolint:unparam
 				if len(args) == 0 {
 					ts.Fatalf("lsp command expects at least one argument")
 				}
 				switch args[0] {
 				case "start":
 					go func() {
-						ctx := context.WithValue(ctx, "name", "server")
 						if err := handlerSrv.ServeStream(ctx, serverConn); !errors.Is(err, io.ErrClosedPipe) {
 							ts.Fatalf("Server error: %v", err)
 						}
 					}()
-					clientConn.Go(context.WithValue(ctx, "name", "client"), nil)
+					clientConn.Go(ctx, nil)
 
 				case "stop":
 					clientConn.Close()
@@ -74,7 +73,7 @@ func TestScripts(t *testing.T) {
 				}
 			},
 
-			"lsp": func(ts *testscript.TestScript, neg bool, args []string) {
+			"lsp": func(ts *testscript.TestScript, neg bool, args []string) { //nolint:unparam
 				if len(args) == 0 {
 					ts.Fatalf("lsp command expects at least one argument")
 				}
