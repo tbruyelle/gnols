@@ -46,6 +46,8 @@ func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrp
 		return h.handleInitialize(ctx, reply, req)
 	case protocol.MethodInitialized:
 		return reply(ctx, nil, nil)
+	case protocol.MethodWorkspaceDidChangeConfiguration:
+		return h.handleDidChangeConfiguration(ctx, reply, req)
 	case protocol.MethodShutdown:
 		return h.handleShutdown(ctx, reply, req)
 	case protocol.MethodTextDocumentDidOpen:
@@ -70,8 +72,6 @@ func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrp
 		return h.handleExecuteCommand(ctx, reply, req)
 	case protocol.MethodTextDocumentFormatting:
 		return h.handleTextDocumentFormatting(ctx, reply, req)
-	case protocol.MethodWorkspaceDidChangeConfiguration:
-		return h.handleDidChangeConfiguration(ctx, reply, req)
 	default:
 		return jsonrpc2.MethodNotFoundHandler(ctx, reply, req)
 	}

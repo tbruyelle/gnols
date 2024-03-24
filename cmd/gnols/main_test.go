@@ -75,14 +75,16 @@ func TestScripts(t *testing.T) {
 
 			"lsp": func(ts *testscript.TestScript, neg bool, args []string) { //nolint:unparam
 				if len(args) == 0 {
-					ts.Fatalf("lsp command expects at least one argument")
+					ts.Fatalf("usage: lsp <command>")
 				}
 				var (
 					workDir  = ts.Getenv("WORK")
+					method   = args[0]
 					id       jsonrpc2.ID
 					response any
 				)
-				switch args[0] {
+				switch method {
+
 				case "initialize":
 					params := &protocol.InitializeParams{
 						RootURI: uri.File(workDir),
@@ -92,17 +94,55 @@ func TestScripts(t *testing.T) {
 					if err != nil {
 						ts.Fatalf("Error Call: %v", err)
 					}
+
+				case "initialized":
+					params := &protocol.InitializeParams{}
+					var err error
+					id, err = clientConn.Call(ctx, protocol.MethodInitialized, params, &response)
+					if err != nil {
+						ts.Fatalf("Error Call: %v", err)
+					}
+
+				case "didChangeConfiguration":
+					params := &protocol.DidChangeConfigurationParams{
+						Settings: map[string]any{
+							"gno":   "/home/tom/go/bin/gno",
+							"gopls": "/home/tom/go/bin/gopls",
+							"root":  "/home/tom/src/gno",
+						},
+					}
+					var err error
+					id, err = clientConn.Call(ctx, protocol.MethodWorkspaceDidChangeConfiguration, params, &response)
+					if err != nil {
+						ts.Fatalf("Error Call: %v", err)
+					}
+
+				case "textDocument-didOpen":
+					if len(args) != 2 {
+						ts.Fatalf("usage: lsp didOpenDocument <path>")
+					}
+					params := &protocol.DidOpenTextDocumentParams{
+						TextDocument: protocol.TextDocumentItem{
+							URI: uri.File(filepath.Join(workDir, args[1])),
+						},
+					}
+					var err error
+					id, err = clientConn.Call(ctx, protocol.MethodTextDocumentDidOpen, params, &response)
+					if err != nil {
+						ts.Fatalf("Error Call: %v", err)
+					}
+
 				default:
-					ts.Fatalf("lsp command '%s' unknown", args[0])
+					ts.Fatalf("lsp method '%s' unknown", method)
 				}
 
 				// write response into $WORK/output
-				bz, err := json.MarshalIndent(response, "", " ")
+				bz, err := json.MarshalIndent(response, "", "  ")
 				if err != nil {
 					ts.Fatalf("Error MarshalIndent: %v", err)
 				}
 				bz = append(bz, '\n') // txtar files always have a final newline
-				filename := filepath.Join(workDir, "output", fmt.Sprintf("init%d.json", id))
+				filename := filepath.Join(workDir, "output", fmt.Sprintf("%s%d.json", method, id))
 				err = os.WriteFile(filename, bz, os.ModePerm)
 				if err != nil {
 					ts.Fatalf("Error WriteFile: %v", err)
