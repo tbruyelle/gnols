@@ -4,10 +4,7 @@ lsp initialize
 cmp output/initialize1.json output/initialize1.json.golden
 
 lsp initialized
-cmp output/initialized2.json output/initialized2.json.golden
-
 lsp didChangeConfiguration
-cmp output/didChangeConfiguration3.json output/didChangeConfiguration3.json.golden
 
 server stop
 -- output/initialize1.json.golden --
@@ -40,7 +37,3 @@ server stop
     }
   }
 }
--- output/initialized2.json.golden --
-null
--- output/didChangeConfiguration3.json.golden --
-null

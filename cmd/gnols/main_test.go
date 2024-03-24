@@ -28,26 +28,34 @@ func (b buffer) Close() error {
 	return nil
 }
 
-func TestScripts(t *testing.T) {
-	clientRead, serverWrite := io.Pipe()
-	serverRead, clientWrite := io.Pipe()
-	serverBuf := buffer{
-		PipeWriter: serverWrite,
-		PipeReader: serverRead,
-	}
-	clientBuf := buffer{
-		PipeWriter: clientWrite,
-		PipeReader: clientRead,
-	}
-	serverConn := jsonrpc2.NewConn(jsonrpc2.NewStream(serverBuf))
-	handlerSrv := jsonrpc2.HandlerServer(handler.NewHandler(serverConn))
-	clientConn := jsonrpc2.NewConn(jsonrpc2.NewStream(clientBuf))
-	// ctx, cancel := context.WithCancel(context.Background())
-	// _ = cancel
-	ctx := context.Background()
+type clisrv struct {
+	serverBuf     buffer
+	clientBuf     buffer
+	serverHandler jsonrpc2.StreamServer
+	clientConn    jsonrpc2.Conn
+	serverConn    jsonrpc2.Conn
+}
 
+func TestScripts(t *testing.T) {
 	testscript.Run(t, testscript.Params{
 		Setup: func(env *testscript.Env) error {
+			clientRead, serverWrite := io.Pipe()
+			serverRead, clientWrite := io.Pipe()
+			clisrv := clisrv{
+				serverBuf: buffer{
+					PipeWriter: serverWrite,
+					PipeReader: serverRead,
+				},
+				clientBuf: buffer{
+					PipeWriter: clientWrite,
+					PipeReader: clientRead,
+				},
+			}
+			clisrv.serverConn = jsonrpc2.NewConn(jsonrpc2.NewStream(clisrv.serverBuf))
+			clisrv.serverHandler = jsonrpc2.HandlerServer(handler.NewHandler(clisrv.serverConn))
+			clisrv.clientConn = jsonrpc2.NewConn(jsonrpc2.NewStream(clisrv.clientBuf))
+			env.Values["clisrv"] = clisrv
+
 			return nil
 		},
 		Dir: "testdata",
@@ -56,20 +64,30 @@ func TestScripts(t *testing.T) {
 				if len(args) == 0 {
 					ts.Fatalf("lsp command expects at least one argument")
 				}
+				var (
+					workDir = ts.Getenv("WORK")
+					clisrv  = getCliSrv(ts)
+					ctx     = context.Background()
+				)
 				switch args[0] {
 				case "start":
 					go func() {
-						if err := handlerSrv.ServeStream(ctx, serverConn); !errors.Is(err, io.ErrClosedPipe) {
+						if err := clisrv.serverHandler.ServeStream(ctx, clisrv.serverConn); !errors.Is(err, io.ErrClosedPipe) {
 							ts.Fatalf("Server error: %v", err)
 						}
 					}()
-					clientConn.Go(ctx, nil)
+					clisrv.clientConn.Go(ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+						// write server notification into $WORK/notify
+						filename := filepath.Join(workDir, fmt.Sprintf("notify.json"))
+						writeJson(ts, filename, req)
+						return nil
+					})
 
 				case "stop":
-					clientConn.Close()
-					serverConn.Close()
-					<-clientConn.Done()
-					<-serverConn.Done()
+					clisrv.clientConn.Close()
+					clisrv.serverConn.Close()
+					<-clisrv.clientConn.Done()
+					<-clisrv.serverConn.Done()
 				}
 			},
 
@@ -82,6 +100,8 @@ func TestScripts(t *testing.T) {
 					method   = args[0]
 					id       jsonrpc2.ID
 					response any
+					clisrv   = getCliSrv(ts)
+					ctx      = context.Background()
 				)
 				switch method {
 
@@ -90,7 +110,7 @@ func TestScripts(t *testing.T) {
 						RootURI: uri.File(workDir),
 					}
 					var err error
-					id, err = clientConn.Call(ctx, protocol.MethodInitialize, params, &response)
+					id, err = clisrv.clientConn.Call(ctx, protocol.MethodInitialize, params, &response)
 					if err != nil {
 						ts.Fatalf("Error Call: %v", err)
 					}
@@ -98,7 +118,7 @@ func TestScripts(t *testing.T) {
 				case "initialized":
 					params := &protocol.InitializeParams{}
 					var err error
-					id, err = clientConn.Call(ctx, protocol.MethodInitialized, params, &response)
+					id, err = clisrv.clientConn.Call(ctx, protocol.MethodInitialized, params, &response)
 					if err != nil {
 						ts.Fatalf("Error Call: %v", err)
 					}
@@ -106,13 +126,15 @@ func TestScripts(t *testing.T) {
 				case "didChangeConfiguration":
 					params := &protocol.DidChangeConfigurationParams{
 						Settings: map[string]any{
-							"gno":   "/home/tom/go/bin/gno",
-							"gopls": "/home/tom/go/bin/gopls",
-							"root":  "/home/tom/src/gno",
+							"gno":              "/home/tom/go/bin/gno",
+							"gopls":            "/home/tom/go/bin/gopls",
+							"root":             "/home/tom/src/gno",
+							"precompileOnSave": true,
+							"buildOnSave":      true,
 						},
 					}
 					var err error
-					id, err = clientConn.Call(ctx, protocol.MethodWorkspaceDidChangeConfiguration, params, &response)
+					id, err = clisrv.clientConn.Call(ctx, protocol.MethodWorkspaceDidChangeConfiguration, params, &response)
 					if err != nil {
 						ts.Fatalf("Error Call: %v", err)
 					}
@@ -127,7 +149,7 @@ func TestScripts(t *testing.T) {
 						},
 					}
 					var err error
-					id, err = clientConn.Call(ctx, protocol.MethodTextDocumentDidOpen, params, &response)
+					id, err = clisrv.clientConn.Call(ctx, protocol.MethodTextDocumentDidOpen, params, &response)
 					if err != nil {
 						ts.Fatalf("Error Call: %v", err)
 					}
@@ -136,18 +158,32 @@ func TestScripts(t *testing.T) {
 					ts.Fatalf("lsp method '%s' unknown", method)
 				}
 
-				// write response into $WORK/output
-				bz, err := json.MarshalIndent(response, "", "  ")
-				if err != nil {
-					ts.Fatalf("Error MarshalIndent: %v", err)
-				}
-				bz = append(bz, '\n') // txtar files always have a final newline
-				filename := filepath.Join(workDir, "output", fmt.Sprintf("%s%d.json", method, id))
-				err = os.WriteFile(filename, bz, os.ModePerm)
-				if err != nil {
-					ts.Fatalf("Error WriteFile: %v", err)
+				if response != nil {
+					// write response into $WORK/output
+					filename := filepath.Join(workDir, "output", fmt.Sprintf("%s%d.json", method, id))
+					writeJson(ts, filename, response)
 				}
 			},
 		},
 	})
+}
+
+func getCliSrv(ts *testscript.TestScript) clisrv {
+	return ts.Value("clisrv").(clisrv)
+}
+
+func writeJson(ts *testscript.TestScript, filename string, x any) {
+	err := os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+	if err != nil {
+		ts.Fatalf("Error MkdirAll: %v", err)
+	}
+	bz, err := json.MarshalIndent(x, "", "  ")
+	if err != nil {
+		ts.Fatalf("Error MarshalIndent: %v", err)
+	}
+	bz = append(bz, '\n') // txtar files always have a final newline
+	err = os.WriteFile(filename, bz, os.ModePerm)
+	if err != nil {
+		ts.Fatalf("Error WriteFile: %v", err)
+	}
 }
