@@ -63,7 +63,7 @@ func TestScripts(t *testing.T) {
 			clientConn.Go(ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 				// write server notification into $WORK/notify
 				filename := filepath.Join(workDir, fmt.Sprintf("notify%d.json", n.Add(1)))
-				writeJson(filename, req)
+				writeJSON(filename, req)
 				return nil
 			})
 
@@ -88,7 +88,6 @@ func TestScripts(t *testing.T) {
 					method  = args[0]
 				)
 				switch method {
-
 				case "initialize":
 					params := &protocol.InitializeParams{
 						RootURI: uri.File(workDir),
@@ -131,7 +130,7 @@ func TestScripts(t *testing.T) {
 
 func clientCall(ts *testscript.TestScript, method string, params any) {
 	var (
-		conn     = ts.Value("conn").(jsonrpc2.Conn)
+		conn     = ts.Value("conn").(jsonrpc2.Conn) //nolint:errcheck
 		response any
 	)
 	id, err := conn.Call(context.Background(), method, params, &response)
@@ -142,11 +141,11 @@ func clientCall(ts *testscript.TestScript, method string, params any) {
 		// write response into $WORK/output
 		workDir := ts.Getenv("WORK")
 		filename := filepath.Join(workDir, "output", fmt.Sprintf("%s%d.json", method, id))
-		writeJson(filename, response)
+		writeJSON(filename, response)
 	}
 }
 
-func writeJson(filename string, x any) {
+func writeJSON(filename string, x any) {
 	err := os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 	if err != nil {
 		panic(err)
