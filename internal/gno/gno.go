@@ -100,6 +100,7 @@ func (m *BinManager) RunGopls(ctx context.Context, args ...string) ([]byte, erro
 	var buf, bufErr bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &bufErr
+	cmd.Dir = m.workspaceFolder
 	// Run command
 	err := cmd.Run()
 	if err != nil {

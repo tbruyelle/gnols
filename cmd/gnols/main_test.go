@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -88,6 +89,9 @@ func TestScripts(t *testing.T) {
 					method  = args[0]
 				)
 				switch method {
+				// TODO use `case protocol.MethodInitialize:` or even better avoid
+				// `swicth method` and rely only on txtar content to create the params
+				// Problem: that makes txtar harder to read and interpret.
 				case "initialize":
 					params := &protocol.InitializeParams{
 						RootURI: uri.File(workDir),
@@ -111,7 +115,7 @@ func TestScripts(t *testing.T) {
 
 				case "textDocument-didOpen":
 					if len(args) != 2 {
-						ts.Fatalf("usage: lsp didOpenDocument <path>")
+						ts.Fatalf("usage: lsp textDocument-didOpen <path>")
 					}
 					params := &protocol.DidOpenTextDocumentParams{
 						TextDocument: protocol.TextDocumentItem{
@@ -119,6 +123,32 @@ func TestScripts(t *testing.T) {
 						},
 					}
 					clientCall(ts, protocol.MethodTextDocumentDidOpen, params)
+
+				case "textDocument-definition":
+					if len(args) != 4 {
+						ts.Fatalf("usage: lsp textDocument-definition <path> <line> <col>")
+					}
+					file := args[1]
+					line, err := strconv.Atoi(args[2])
+					if err != nil {
+						ts.Fatalf("usage: lsp textDocument-definition <path> <line> <col>")
+					}
+					col, err := strconv.Atoi(args[3])
+					if err != nil {
+						ts.Fatalf("usage: lsp textDocument-definition <path> <line> <col>")
+					}
+					params := &protocol.DefinitionParams{
+						TextDocumentPositionParams: protocol.TextDocumentPositionParams{
+							TextDocument: protocol.TextDocumentIdentifier{
+								URI: uri.File(filepath.Join(workDir, file)),
+							},
+							Position: protocol.Position{
+								Line:      uint32(line),
+								Character: uint32(col),
+							},
+						},
+					}
+					clientCall(ts, protocol.MethodTextDocumentDefinition, params)
 
 				default:
 					ts.Fatalf("lsp method '%s' unknown", method)

@@ -1,0 +1,55 @@
+# Init phase
+lsp initialize
+lsp initialized
+lsp didChangeConfiguration
+lsp textDocument-didOpen x.gno
+
+# definition in the same file
+lsp textDocument-definition x.gno 3 5
+cmpenv output/textDocument/definition5.json output/textDocument/definition5.json.golden
+
+# definition in an other file
+lsp textDocument-definition x.gno 4 2
+cmpenv output/textDocument/definition6.json output/textDocument/definition6.json.golden
+
+-- x.gno --
+package foo
+
+func Hello() {
+	_ = X{}
+	Hey()
+}
+
+type X struct{}
+-- y.gno --
+package foo
+
+func Hey() {}
+-- output/textDocument/definition5.json.golden --
+{
+  "range": {
+    "end": {
+      "character": 6,
+      "line": 7
+    },
+    "start": {
+      "character": 5,
+      "line": 7
+    }
+  },
+  "uri": "file://$WORK/x.gno"
+}
+-- output/textDocument/definition6.json.golden --
+{
+  "range": {
+    "end": {
+      "character": 8,
+      "line": 2
+    },
+    "start": {
+      "character": 5,
+      "line": 2
+    }
+  },
+  "uri": "file://$WORK/y.gno"
+}
