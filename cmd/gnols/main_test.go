@@ -29,35 +29,25 @@ func (b buffer) Close() error {
 	return nil
 }
 
-type clisrv struct {
-	serverBuf     buffer
-	clientBuf     buffer
-	serverHandler jsonrpc2.StreamServer
-	clientConn    jsonrpc2.Conn
-	serverConn    jsonrpc2.Conn
-}
-
 func TestScripts(t *testing.T) {
 	testscript.Run(t, testscript.Params{
 		Setup: func(env *testscript.Env) error {
 			var (
 				clientRead, serverWrite = io.Pipe()
 				serverRead, clientWrite = io.Pipe()
-				clisrv                  = clisrv{
-					serverBuf: buffer{
-						PipeWriter: serverWrite,
-						PipeReader: serverRead,
-					},
-					clientBuf: buffer{
-						PipeWriter: clientWrite,
-						PipeReader: clientRead,
-					},
+				serverBuf               = buffer{
+					PipeWriter: serverWrite,
+					PipeReader: serverRead,
 				}
+				clientBuf = buffer{
+					PipeWriter: clientWrite,
+					PipeReader: clientRead,
+				}
+				serverConn    = jsonrpc2.NewConn(jsonrpc2.NewStream(serverBuf))
+				serverHandler = jsonrpc2.HandlerServer(handler.NewHandler(serverConn))
+				clientConn    = jsonrpc2.NewConn(jsonrpc2.NewStream(clientBuf))
 			)
-			clisrv.serverConn = jsonrpc2.NewConn(jsonrpc2.NewStream(clisrv.serverBuf))
-			clisrv.serverHandler = jsonrpc2.HandlerServer(handler.NewHandler(clisrv.serverConn))
-			clisrv.clientConn = jsonrpc2.NewConn(jsonrpc2.NewStream(clisrv.clientBuf))
-			env.Values["conn"] = clisrv.clientConn
+			env.Values["conn"] = clientConn
 
 			// Start LSP server
 			var (
@@ -66,11 +56,11 @@ func TestScripts(t *testing.T) {
 				n       atomic.Uint32
 			)
 			go func() {
-				if err := clisrv.serverHandler.ServeStream(ctx, clisrv.serverConn); !errors.Is(err, io.ErrClosedPipe) {
+				if err := serverHandler.ServeStream(ctx, serverConn); !errors.Is(err, io.ErrClosedPipe) {
 					env.T().Fatal("Server error", err)
 				}
 			}()
-			clisrv.clientConn.Go(ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+			clientConn.Go(ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 				// write server notification into $WORK/notify
 				filename := filepath.Join(workDir, fmt.Sprintf("notify%d.json", n.Add(1)))
 				writeJson(filename, req)
@@ -79,10 +69,10 @@ func TestScripts(t *testing.T) {
 
 			// Stop LSP server at the end of test
 			env.Defer(func() {
-				clisrv.clientConn.Close()
-				clisrv.serverConn.Close()
-				<-clisrv.clientConn.Done()
-				<-clisrv.serverConn.Done()
+				clientConn.Close()
+				serverConn.Close()
+				<-clientConn.Done()
+				<-serverConn.Done()
 			})
 
 			return nil
