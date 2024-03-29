@@ -1,18 +1,14 @@
 # Init phase
-server start
 lsp initialize
 lsp initialized
 lsp didChangeConfiguration
 
 # Test open document
 lsp textDocument-didOpen gnotest.gno
-cmpenv notify.json notify.json.golden
+cmpenv notify1.json notify1.json.golden
 # gno transpile should have created a gno.gen.go file
 cmp gnotest.gno.gen.go gnotest.gno.gen.go.golden
-
-server stop
-
--- notify.json.golden --
+-- notify1.json.golden --
 {
   "jsonrpc": "2.0",
   "method": "textDocument/publishDiagnostics",

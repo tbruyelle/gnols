@@ -1,12 +1,8 @@
-server start
-
 lsp initialize
 cmp output/initialize1.json output/initialize1.json.golden
 
 lsp initialized
 lsp didChangeConfiguration
-
-server stop
 -- output/initialize1.json.golden --
 {
   "capabilities": {
