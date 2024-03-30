@@ -52,9 +52,9 @@ func TestScripts(t *testing.T) {
 
 			// Start LSP server
 			var (
-				ctx     = context.Background()
-				workDir = env.Getenv("WORK")
-				n       atomic.Uint32
+				ctx       = context.Background()
+				workDir   = env.Getenv("WORK")
+				notifyNum atomic.Uint32
 			)
 			go func() {
 				if err := serverHandler.ServeStream(ctx, serverConn); !errors.Is(err, io.ErrClosedPipe) {
@@ -63,7 +63,7 @@ func TestScripts(t *testing.T) {
 			}()
 			clientConn.Go(ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 				// write server notification into $WORK/notify
-				filename := filepath.Join(workDir, fmt.Sprintf("notify%d.json", n.Add(1)))
+				filename := filepath.Join(workDir, fmt.Sprintf("notify%d.json", notifyNum.Add(1)))
 				writeJSON(filename, req)
 				return nil
 			})
