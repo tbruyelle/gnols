@@ -4,7 +4,6 @@ lsp initialized input/initialized.json
 lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 lsp textDocument/didOpen input/didOpen_x.json
 
-# references in the same file
 lsp textDocument/references input/references_x_3_5.json
 cmpenv output/references_x_3_5.json expected/references_x_3_5.json
 -- x.gno --

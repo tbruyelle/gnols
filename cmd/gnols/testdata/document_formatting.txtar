@@ -1,0 +1,58 @@
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+lsp textDocument/formatting input/formatting.json
+cmpenv output/formatting.json expected/formatting.json
+-- x.gno --
+package foo
+
+func Hello() {
+}
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "/home/tom/go/bin/gno",
+		"gopls":            "/home/tom/go/bin/gopls",
+		"root":             "/home/tom/src/gno",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno",
+		"text":"package foo\n\nfunc   Hello(){}"
+	}
+}
+-- input/formatting.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	}
+}
+-- expected/formatting.json --
+[
+  {
+    "newText": "package foo\n\nfunc Hello() {}\n",
+    "range": {
+      "end": {
+        "character": 16,
+        "line": 2
+      },
+      "start": {
+        "character": 0,
+        "line": 0
+      }
+    }
+  }
+]
