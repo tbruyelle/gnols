@@ -8,15 +8,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"sync/atomic"
 	"testing"
 
 	"github.com/jdkato/gnols/internal/handler"
 	"github.com/rogpeppe/go-internal/testscript"
 	"go.lsp.dev/jsonrpc2"
-	"go.lsp.dev/protocol"
-	"go.lsp.dev/uri"
 )
 
 type buffer struct {
@@ -51,21 +48,18 @@ func TestScripts(t *testing.T) {
 			env.Values["conn"] = clientConn
 
 			// Start LSP server
-			var (
-				ctx       = context.Background()
-				workDir   = env.Getenv("WORK")
-				notifyNum atomic.Uint32
-			)
+			ctx := context.Background()
 			go func() {
 				if err := serverHandler.ServeStream(ctx, serverConn); !errors.Is(err, io.ErrClosedPipe) {
 					env.T().Fatal("Server error", err)
 				}
 			}()
+			// Listen to server notifications
+			var notifyNum atomic.Uint32
 			clientConn.Go(ctx, func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-				// write server notification into $WORK/notify
-				filename := filepath.Join(workDir, fmt.Sprintf("notify%d.json", notifyNum.Add(1)))
-				writeJSON(filename, req)
-				return nil
+				// write server notifications into $WORK/output/notify{++notifyNum}.json
+				filename := fmt.Sprintf("notify%d.json", notifyNum.Add(1))
+				return writeJSON(env, filename, req)
 			})
 
 			// Stop LSP server at the end of test
@@ -80,113 +74,61 @@ func TestScripts(t *testing.T) {
 		},
 		Dir: "testdata",
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
+			// "lsp" sends a lsp command to the server with the following arguments:
+			// - the method name
+			// - the path to the file that contains the method parameters
+			// The server's response is encoded into the $WORK/output directory, with
+			// filename equals to the parameter filename.
 			"lsp": func(ts *testscript.TestScript, neg bool, args []string) { //nolint:unparam
-				if len(args) == 0 {
-					ts.Fatalf("usage: lsp <command>")
+				if len(args) != 2 {
+					ts.Fatalf("usage: lsp <method> <param_file>")
 				}
 				var (
-					workDir = ts.Getenv("WORK")
-					method  = args[0]
+					method     = args[0]
+					paramsFile = args[1]
 				)
-				switch method {
-				// TODO use `case protocol.MethodInitialize:` or even better avoid
-				// `swicth method` and rely only on txtar content to create the params
-				// Problem: that makes txtar harder to read and interpret.
-				case "initialize":
-					params := &protocol.InitializeParams{
-						RootURI: uri.File(workDir),
-					}
-					clientCall(ts, protocol.MethodInitialize, params)
-
-				case "initialized":
-					clientCall(ts, protocol.MethodInitialized, &protocol.InitializeParams{})
-
-				case "didChangeConfiguration":
-					params := &protocol.DidChangeConfigurationParams{
-						Settings: map[string]any{
-							"gno":              "/home/tom/go/bin/gno",
-							"gopls":            "/home/tom/go/bin/gopls",
-							"root":             "/home/tom/src/gno",
-							"precompileOnSave": true,
-							"buildOnSave":      true,
-						},
-					}
-					clientCall(ts, protocol.MethodWorkspaceDidChangeConfiguration, params)
-
-				case "textDocument-didOpen":
-					if len(args) != 2 {
-						ts.Fatalf("usage: lsp textDocument-didOpen <path>")
-					}
-					params := &protocol.DidOpenTextDocumentParams{
-						TextDocument: protocol.TextDocumentItem{
-							URI: uri.File(filepath.Join(workDir, args[1])),
-						},
-					}
-					clientCall(ts, protocol.MethodTextDocumentDidOpen, params)
-
-				case "textDocument-definition":
-					if len(args) != 4 {
-						ts.Fatalf("usage: lsp textDocument-definition <path> <line> <col>")
-					}
-					file := args[1]
-					line, err := strconv.Atoi(args[2])
-					if err != nil {
-						ts.Fatalf("usage: lsp textDocument-definition <path> <line> <col>")
-					}
-					col, err := strconv.Atoi(args[3])
-					if err != nil {
-						ts.Fatalf("usage: lsp textDocument-definition <path> <line> <col>")
-					}
-					params := &protocol.DefinitionParams{
-						TextDocumentPositionParams: protocol.TextDocumentPositionParams{
-							TextDocument: protocol.TextDocumentIdentifier{
-								URI: uri.File(filepath.Join(workDir, file)),
-							},
-							Position: protocol.Position{
-								Line:      uint32(line),
-								Character: uint32(col),
-							},
-						},
-					}
-					clientCall(ts, protocol.MethodTextDocumentDefinition, params)
-
-				default:
-					ts.Fatalf("lsp method '%s' unknown", method)
-				}
+				call(ts, method, paramsFile)
 			},
 		},
 	})
 }
 
-func clientCall(ts *testscript.TestScript, method string, params any) {
+// call decodes paramFile and send it to the server using method.
+func call(ts *testscript.TestScript, method string, paramFile string) {
+	paramStr := ts.ReadFile(paramFile)
+	// Replace $WORK with real path
+	paramStr = os.Expand(paramStr, func(key string) string {
+		return ts.Getenv(key)
+	})
+	var params any
+	if err := json.Unmarshal([]byte(paramStr), &params); err != nil {
+		ts.Fatalf("decode param file %s: %v", paramFile, err)
+	}
 	var (
 		conn     = ts.Value("conn").(jsonrpc2.Conn) //nolint:errcheck
 		response any
 	)
-	id, err := conn.Call(context.Background(), method, params, &response)
+	_, err := conn.Call(context.Background(), method, params, &response)
 	if err != nil {
 		ts.Fatalf("Error Call: %v", err)
 	}
-	if response != nil {
-		// write response into $WORK/output
-		workDir := ts.Getenv("WORK")
-		filename := filepath.Join(workDir, "output", fmt.Sprintf("%s%d.json", method, id))
-		writeJSON(filename, response)
+	if err := writeJSON(ts, filepath.Base(paramFile), response); err != nil {
+		ts.Fatalf("writeJSON: %v", err)
 	}
 }
 
-func writeJSON(filename string, x any) {
+// writeJSON writes x to $WORK/output/filename
+func writeJSON(ts interface{ Getenv(string) string }, filename string, x any) error {
+	workDir := ts.Getenv("WORK")
+	filename = filepath.Join(workDir, "output", filename)
 	err := os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	bz, err := json.MarshalIndent(x, "", "  ")
 	if err != nil {
-		panic(err)
+		return err
 	}
 	bz = append(bz, '\n') // txtar files always have a final newline
-	err = os.WriteFile(filename, bz, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
+	return os.WriteFile(filename, bz, os.ModePerm)
 }

@@ -1,15 +1,15 @@
 # Init phase
-lsp initialize
-lsp initialized
-lsp didChangeConfiguration
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 
 # open document w/o errors
-lsp textDocument-didOpen x.gno
-cmpenv notify1.json notify1.json.golden
+lsp textDocument/didOpen input/didOpen_x.json
+cmpenv output/notify1.json expected/notify1.json
 
 # open document with errors
-lsp textDocument-didOpen y.gno
-cmpenv notify2.json notify2.json.golden
+lsp textDocument/didOpen input/didOpen_y.json
+cmpenv output/notify2.json expected/notify2.json
 
 # gno transpile should have created a *.gno.gen.go files
 cmp x.gno.gen.go x.gno.gen.go.golden
@@ -27,7 +27,35 @@ var x X
 func Bye() {
 	y := 1
 }
--- notify1.json.golden --
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "/home/tom/go/bin/gno",
+		"gopls":            "/home/tom/go/bin/gopls",
+		"root":             "/home/tom/src/gno",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	}
+}
+-- input/didOpen_y.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/y.gno"
+	}
+}
+-- expected/notify1.json --
 {
   "jsonrpc": "2.0",
   "method": "textDocument/publishDiagnostics",
@@ -36,7 +64,7 @@ func Bye() {
     "diagnostics": []
   }
 }
--- notify2.json.golden --
+-- expected/notify2.json --
 {
   "jsonrpc": "2.0",
   "method": "textDocument/publishDiagnostics",

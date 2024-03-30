@@ -1,9 +1,28 @@
-lsp initialize
-cmp output/initialize1.json output/initialize1.json.golden
+lsp initialize input/initialize.json
+cmp output/initialize.json expected/initialize.json
 
-lsp initialized
-lsp didChangeConfiguration
--- output/initialize1.json.golden --
+lsp initialized input/initialized.json
+cmp output/initialized.json expected/empty.json
+
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+cmp output/didChangeConfiguration.json expected/empty.json
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "/home/tom/go/bin/gno",
+		"gopls":            "/home/tom/go/bin/gopls",
+		"root":             "/home/tom/src/gno",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- expected/initialize.json --
 {
   "capabilities": {
     "codeLensProvider": {
@@ -33,3 +52,5 @@ lsp didChangeConfiguration
     }
   }
 }
+-- expected/empty.json --
+null

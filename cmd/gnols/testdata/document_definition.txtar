@@ -1,16 +1,16 @@
 # Init phase
-lsp initialize
-lsp initialized
-lsp didChangeConfiguration
-lsp textDocument-didOpen x.gno
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
 
 # definition in the same file
-lsp textDocument-definition x.gno 3 5
-cmpenv output/textDocument/definition5.json output/textDocument/definition5.json.golden
+lsp textDocument/definition input/definition_x_3_5.json
+cmpenv output/definition_x_3_5.json expected/definition_x_3_5.json
 
 # definition in an other file
-lsp textDocument-definition x.gno 4 2
-cmpenv output/textDocument/definition6.json output/textDocument/definition6.json.golden
+lsp textDocument/definition input/definition_x_4_2.json
+cmpenv output/definition_x_4_2.json expected/definition_x_4_2.json
 
 -- x.gno --
 package foo
@@ -25,7 +25,49 @@ type X struct{}
 package foo
 
 func Hey() {}
--- output/textDocument/definition5.json.golden --
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "/home/tom/go/bin/gno",
+		"gopls":            "/home/tom/go/bin/gopls",
+		"root":             "/home/tom/src/gno",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	}
+}
+-- input/definition_x_3_5.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"line": 3,
+		"character": 5
+	}
+}
+-- input/definition_x_4_2.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"line": 4,
+		"character": 2
+	}
+}
+-- expected/definition_x_3_5.json --
 {
   "range": {
     "end": {
@@ -39,7 +81,7 @@ func Hey() {}
   },
   "uri": "file://$WORK/x.gno"
 }
--- output/textDocument/definition6.json.golden --
+-- expected/definition_x_4_2.json --
 {
   "range": {
     "end": {
