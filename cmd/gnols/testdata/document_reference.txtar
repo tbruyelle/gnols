@@ -1,0 +1,97 @@
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+# references in the same file
+lsp textDocument/references input/references_x_3_5.json
+cmpenv output/references_x_3_5.json expected/references_x_3_5.json
+-- x.gno --
+package foo
+
+func Hello() {
+	_ = X{}
+}
+
+type X struct{}
+-- y.gno --
+package foo
+
+func Hey() {
+	X{}
+}
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "/home/tom/go/bin/gno",
+		"gopls":            "/home/tom/go/bin/gopls",
+		"root":             "/home/tom/src/gno",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	}
+}
+-- input/references_x_3_5.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"line": 3,
+		"character": 5
+	}
+}
+-- expected/references_x_3_5.json --
+[
+  {
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 6
+      },
+      "start": {
+        "character": 5,
+        "line": 6
+      }
+    },
+    "uri": "file://$WORK/x.gno"
+  },
+  {
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 3
+      },
+      "start": {
+        "character": 5,
+        "line": 3
+      }
+    },
+    "uri": "file://$WORK/x.gno"
+  },
+  {
+    "range": {
+      "end": {
+        "character": 2,
+        "line": 3
+      },
+      "start": {
+        "character": 1,
+        "line": 3
+      }
+    },
+    "uri": "file://$WORK/y.gno"
+  }
+]
