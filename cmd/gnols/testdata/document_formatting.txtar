@@ -9,7 +9,7 @@ cmpenv output/formatting.json expected/formatting.json
 -- x.gno --
 package foo
 
-func Hello() {
+func   Hello( ) {
 }
 -- input/initialize.json --
 {

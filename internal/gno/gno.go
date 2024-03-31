@@ -346,3 +346,25 @@ func (m *BinManager) References(ctx context.Context, uri uri.URI, line, col uint
 	slog.Info("found references", "spans", spans)
 	return spans, nil
 }
+
+// Implementation returns the implementations of the symbol at the given
+// position using the `gopls` tool.
+func (m *BinManager) Implementation(ctx context.Context, uri uri.URI, line, col uint32) ([]Span, error) {
+	target := SpanFromLSPLocation(uri, line, col).Gno2GenGo().Position()
+	slog.Info("fetching implementation", "uri", uri, "line", line, "col", col, "target", target)
+
+	bz, err := m.RunGopls(ctx, "implementation", target)
+	if err != nil {
+		return nil, err
+	}
+	spans, err := SpansFromPositions(string(bz))
+	if err != nil {
+		return nil, err
+	}
+	// Turn back span to .gno file.
+	for i := 0; i < len(spans); i++ {
+		spans[i] = spans[i].GenGo2Gno()
+	}
+	slog.Info("found implementation", "spans", spans)
+	return spans, nil
+}

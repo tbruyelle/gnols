@@ -8,16 +8,17 @@ import (
 	"go.lsp.dev/protocol"
 )
 
-func (h *handler) handleTextDocumentReferences(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	var params protocol.ReferenceParams
+func (h *handler) handleTextDocumentImplementation(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+	var params protocol.ImplementationParams
 
 	if req.Params() == nil {
 		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
-	} else if err := json.Unmarshal(req.Params(), &params); err != nil {
+	}
+	if err := json.Unmarshal(req.Params(), &params); err != nil {
 		return replyBadJSON(ctx, reply, err)
 	}
 
-	spans, err := h.getBinManager().References(ctx,
+	spans, err := h.getBinManager().Implementation(ctx,
 		params.TextDocument.URI, params.Position.Line, params.Position.Character,
 	)
 	if err != nil {

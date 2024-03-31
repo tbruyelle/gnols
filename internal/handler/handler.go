@@ -61,7 +61,9 @@ func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrp
 	case protocol.MethodTextDocumentDefinition:
 		return h.handleTextDocumentDefinition(ctx, reply, req)
 	case protocol.MethodTextDocumentReferences:
-		return h.handleTextDocumentReferrences(ctx, reply, req)
+		return h.handleTextDocumentReferences(ctx, reply, req)
+	case protocol.MethodTextDocumentImplementation:
+		return h.handleTextDocumentImplementation(ctx, reply, req)
 	case protocol.MethodTextDocumentCompletion:
 		return h.handleTextDocumentCompletion(ctx, reply, req)
 	case protocol.MethodTextDocumentHover:
