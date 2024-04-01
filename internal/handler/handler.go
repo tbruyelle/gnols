@@ -107,6 +107,9 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 			ReferencesProvider: &protocol.ReferencesTextDocumentClientCapabilities{
 				DynamicRegistration: false,
 			},
+			ImplementationProvider: &protocol.ImplementationTextDocumentClientCapabilities{
+				DynamicRegistration: false,
+			},
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{"."},
 				ResolveProvider:   false,

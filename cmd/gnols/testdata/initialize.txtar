@@ -42,6 +42,7 @@ cmp output/didChangeConfiguration.json expected/empty.json
       ]
     },
     "hoverProvider": true,
+    "implementationProvider": {},
     "referencesProvider": {},
     "textDocumentSync": {
       "change": 1,
