@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"path/filepath"
 
@@ -12,11 +11,8 @@ import (
 
 func (h *handler) handleExecuteCommand(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.ExecuteCommandParams
-
-	if req.Params() == nil {
-		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
-	} else if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return replyBadJSON(ctx, reply, err)
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 	slog.Info("execute_command", "command", params.Command, "args", params.Arguments)
 

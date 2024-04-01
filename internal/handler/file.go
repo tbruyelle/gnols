@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -12,9 +11,8 @@ import (
 
 func (h *handler) handleTextDocumentDidOpen(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.DidOpenTextDocumentParams
-
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return replyBadJSON(ctx, reply, err)
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 
 	doc, err := h.documents.Save(params.TextDocument.URI, params.TextDocument.Text)
@@ -39,12 +37,8 @@ func (h *handler) handleTextDocumentDidClose(ctx context.Context, reply jsonrpc2
 
 func (h *handler) handleTextDocumentDidSave(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.DidSaveTextDocumentParams
-
-	if req.Params() == nil {
-		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
-	}
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return replyBadJSON(ctx, reply, err)
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 
 	doc, ok := h.documents.Get(params.TextDocument.URI)
@@ -63,11 +57,8 @@ func (h *handler) handleTextDocumentDidSave(ctx context.Context, reply jsonrpc2.
 
 func (h *handler) handleTextDocumentDidChange(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.DidChangeTextDocumentParams
-
-	if req.Params() == nil {
-		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
-	} else if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return replyBadJSON(ctx, reply, err)
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 
 	doc, ok := h.documents.Get(params.TextDocument.URI)

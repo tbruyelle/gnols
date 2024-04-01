@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"strings"
 
@@ -13,12 +12,9 @@ import (
 )
 
 func (h *handler) handleHover(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
-	var params protocol.DefinitionParams
-
-	if req.Params() == nil {
-		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
-	} else if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return replyBadJSON(ctx, reply, err)
+	var params protocol.HoverParams
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 
 	doc, ok := h.documents.Get(params.TextDocument.URI)

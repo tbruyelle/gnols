@@ -20,7 +20,3 @@ func replyErr(ctx context.Context, reply jsonrpc2.Replier, err error) error {
 func replyNoDocFound(ctx context.Context, reply jsonrpc2.Replier, uri uri.URI) error {
 	return replyErr(ctx, reply, fmt.Errorf("couldn't find document %s", uri.Filename()))
 }
-
-func replyBadJSON(ctx context.Context, reply jsonrpc2.Replier, err error) error {
-	return replyErr(ctx, reply, fmt.Errorf("could not parse JSON: %w", err))
-}

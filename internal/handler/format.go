@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"unicode/utf8"
@@ -13,11 +12,8 @@ import (
 
 func (h *handler) handleTextDocumentFormatting(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.DocumentFormattingParams
-
-	if req.Params() == nil {
-		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
-	} else if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return replyBadJSON(ctx, reply, err)
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 
 	doc, ok := h.documents.Get(params.TextDocument.URI)

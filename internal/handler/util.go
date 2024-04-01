@@ -1,13 +1,26 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"go/ast"
 	"strings"
 
+	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
 	"github.com/jdkato/gnols/internal/stdlib"
 )
+
+func readParams(req jsonrpc2.Request, params any) error {
+	if req.Params() == nil {
+		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
+	}
+	if err := json.Unmarshal(req.Params(), params); err != nil {
+		return fmt.Errorf("could not parse JSON: %w", err)
+	}
+	return nil
+}
 
 func posToRange(line int, span []int) *protocol.Range {
 	return &protocol.Range{

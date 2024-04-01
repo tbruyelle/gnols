@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"go/ast"
 	"log/slog"
 	"regexp"
@@ -31,26 +30,19 @@ type testFns struct {
 
 func (h *handler) handleCodeLens(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.CodeLensParams
-
-	if req.Params() == nil {
-		return &jsonrpc2.Error{Code: jsonrpc2.InvalidParams}
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
-
-	err := json.Unmarshal(req.Params(), &params)
-	if err != nil {
-		return replyBadJSON(ctx, reply, err)
-	}
-	items := []protocol.CodeLens{}
 
 	doc, ok := h.documents.Get(params.TextDocument.URI)
 	if !ok {
 		return replyNoDocFound(ctx, reply, params.TextDocument.URI)
 	}
 
+	items := []protocol.CodeLens{}
 	if !strings.HasSuffix(doc.Path, "_test.gno") {
 		return reply(ctx, items, nil)
 	}
-
 	if doc.Pgf == nil {
 		return reply(ctx, items, nil)
 	}

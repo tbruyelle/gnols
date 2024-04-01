@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 
 	"go.lsp.dev/jsonrpc2"
@@ -13,10 +12,8 @@ import (
 
 func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.DidChangeConfigurationParams
-
-	err := json.Unmarshal(req.Params(), &params)
-	if err != nil {
-		return replyBadJSON(ctx, reply, err)
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 
 	settings, ok := params.Settings.(map[string]interface{})
@@ -33,6 +30,7 @@ func (h *handler) handleDidChangeConfiguration(ctx context.Context, reply jsonrp
 	build, _ := settings["buildOnSave"].(bool)
 	root, _ := settings["root"].(string)
 
+	var err error
 	h.binManager, err = gno.NewBinManager(h.workspaceFolder, gnoBin, gnokeyBin, goplsBin, root, transpile, build)
 	if err != nil {
 		return replyErr(ctx, reply, err)

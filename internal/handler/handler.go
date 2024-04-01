@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 
 	"go.lsp.dev/jsonrpc2"
@@ -81,9 +80,8 @@ func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrp
 
 func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	var params protocol.InitializeParams
-
-	if err := json.Unmarshal(req.Params(), &params); err != nil {
-		return replyBadJSON(ctx, reply, err)
+	if err := readParams(req, &params); err != nil {
+		return replyErr(ctx, reply, err)
 	}
 	// NOTE(tb): params.RootURI is deprecated in favor of params.WorkspaceFolders,
 	// but this one is not filled by vim-lsp. Maybe we should check it first and
