@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sourcegraph/go-diff/diff"
 	"go.lsp.dev/protocol"
 	"go.lsp.dev/uri"
 )
@@ -184,6 +185,11 @@ type Span struct {
 	URI   uri.URI
 	Start Location
 	End   Location
+}
+
+type Edit struct {
+	Span
+	NewText string
 }
 
 type Location struct {
@@ -367,4 +373,55 @@ func (m *BinManager) Implementation(ctx context.Context, uri uri.URI, line, col 
 	}
 	slog.Info("found implementation", "spans", spans)
 	return spans, nil
+}
+
+func (m *BinManager) PrepareRename(ctx context.Context, file uri.URI, line, col uint32) error {
+	target := SpanFromLSPLocation(file, line, col).Gno2GenGo().Position()
+	slog.Info("prepare_rename", "uri", file, "line", line, "col", col, "target", target)
+	_, err := m.RunGopls(ctx, "prepare_rename", target)
+	return err
+}
+
+func (m *BinManager) Rename(ctx context.Context, file uri.URI, line, col uint32, newName string) ([]Edit, error) {
+	target := SpanFromLSPLocation(file, line, col).Gno2GenGo().Position()
+	slog.Info("rename", "uri", file, "line", line, "col", col, "target", target)
+
+	bz, err := m.RunGopls(ctx, "rename", "-d", target, newName)
+	if err != nil {
+		return nil, err
+	}
+	diffs, err := diff.ParseMultiFileDiff(bz)
+	if err != nil {
+		return nil, err
+	}
+	var edits []Edit
+	for _, f := range diffs {
+		for _, h := range f.Hunks {
+			var lineCount uint32
+			for _, line := range strings.Split(string(h.Body), "\n") {
+				if len(line) > 0 {
+					switch line[0] {
+					case ' ': // regular line, increment lineCount
+						lineCount++
+					case '-': // deletion line, ignore
+						break
+					case '+': // add line, found the newText
+						newText := line[1:] + "\n"
+						edits = append(edits, Edit{
+							Span: Span{
+								URI: uri.File(f.NewName),
+								Start: Location{
+									Line:   uint32(h.NewStartLine) + lineCount,
+									Column: 1,
+								},
+							}.GenGo2Gno(),
+							NewText: newText,
+						})
+						lineCount++
+					}
+				}
+			}
+		}
+	}
+	return edits, nil
 }

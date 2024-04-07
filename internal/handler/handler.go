@@ -63,6 +63,10 @@ func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrp
 		return h.handleTextDocumentReferences(ctx, reply, req)
 	case protocol.MethodTextDocumentImplementation:
 		return h.handleTextDocumentImplementation(ctx, reply, req)
+	case protocol.MethodTextDocumentPrepareRename:
+		return h.handleTextDocumentPrepareRename(ctx, reply, req)
+	case protocol.MethodTextDocumentRename:
+		return h.handleTextDocumentRename(ctx, reply, req)
 	case protocol.MethodTextDocumentCompletion:
 		return h.handleTextDocumentCompletion(ctx, reply, req)
 	case protocol.MethodTextDocumentHover:
@@ -104,6 +108,9 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 			},
 			ReferencesProvider: &protocol.ReferencesTextDocumentClientCapabilities{
 				DynamicRegistration: false,
+			},
+			RenameProvider: &protocol.RenameOptions{
+				PrepareProvider: true,
 			},
 			ImplementationProvider: &protocol.ImplementationTextDocumentClientCapabilities{
 				DynamicRegistration: false,

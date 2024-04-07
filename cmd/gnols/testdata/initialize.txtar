@@ -44,6 +44,9 @@ cmp output/didChangeConfiguration.json expected/empty.json
     "hoverProvider": true,
     "implementationProvider": {},
     "referencesProvider": {},
+    "renameProvider": {
+      "prepareProvider": true
+    },
     "textDocumentSync": {
       "change": 1,
       "openClose": true,

@@ -1,0 +1,167 @@
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+# rename Hey to ByeBye (longer rename)
+lsp textDocument/rename input/rename_Hey_to_ByeBye.json
+cmpenv output/rename_Hey_to_ByeBye.json expected/rename_Hey_to_ByeBye.json
+
+# rename Hey to Yo (shorter rename)
+lsp textDocument/rename input/rename_Hey_to_Yo.json
+cmpenv output/rename_Hey_to_Yo.json expected/rename_Hey_to_Yo.json
+-- x.gno --
+package foo
+
+func Hello() {
+	Hey()
+}
+
+func Hi() {
+	Hey()
+}
+-- y.gno --
+package foo
+
+func Hey() {}
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "/home/tom/go/bin/gno",
+		"gopls":            "/home/tom/go/bin/gopls",
+		"root":             "/home/tom/src/gno",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	}
+}
+-- input/rename_Hey_to_ByeBye.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"line": 3,
+		"character": 3
+	},
+	"newName": "ByeBye"
+}
+-- expected/rename_Hey_to_ByeBye.json --
+{
+  "changes": {
+    "file://$WORK/x.gno": [
+      {
+        "newText": "\tByeBye()\n",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 4
+          },
+          "start": {
+            "character": 0,
+            "line": 3
+          }
+        }
+      },
+      {
+        "newText": "\tByeBye()\n",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 8
+          },
+          "start": {
+            "character": 0,
+            "line": 7
+          }
+        }
+      }
+    ],
+    "file://$WORK/y.gno": [
+      {
+        "newText": "func ByeBye() {}\n",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 3
+          },
+          "start": {
+            "character": 0,
+            "line": 2
+          }
+        }
+      }
+    ]
+  }
+}
+-- input/rename_Hey_to_Yo.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"line": 3,
+		"character": 3
+	},
+	"newName": "Yo"
+}
+-- expected/rename_Hey_to_Yo.json --
+{
+  "changes": {
+    "file://$WORK/x.gno": [
+      {
+        "newText": "\tYo()\n",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 4
+          },
+          "start": {
+            "character": 0,
+            "line": 3
+          }
+        }
+      },
+      {
+        "newText": "\tYo()\n",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 8
+          },
+          "start": {
+            "character": 0,
+            "line": 7
+          }
+        }
+      }
+    ],
+    "file://$WORK/y.gno": [
+      {
+        "newText": "func Yo() {}\n",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 3
+          },
+          "start": {
+            "character": 0,
+            "line": 2
+          }
+        }
+      }
+    ]
+  }
+}
