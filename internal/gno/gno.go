@@ -390,6 +390,7 @@ func (m *BinManager) Rename(ctx context.Context, file uri.URI, line, col uint32,
 	if err != nil {
 		return nil, err
 	}
+	// gopls rename returns a diff, parse it
 	diffs, err := diff.ParseMultiFileDiff(bz)
 	if err != nil {
 		return nil, err
