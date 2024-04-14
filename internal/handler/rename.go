@@ -45,7 +45,7 @@ func (h *handler) handleTextDocumentRename(ctx context.Context, reply jsonrpc2.R
 		Changes: make(map[uri.URI][]protocol.TextEdit),
 	}
 	for _, e := range edits {
-		slog.Info("edit", "line", e.Start.Line, "char", e.Start.Column, "end", e.End.Line, "endc", e.End.Column)
+		slog.Info("edit", "line", e.Start.Line, "char", e.Start.Column)
 		response.Changes[e.URI] = append(response.Changes[e.URI], protocol.TextEdit{
 			NewText: e.NewText,
 			Range: protocol.Range{

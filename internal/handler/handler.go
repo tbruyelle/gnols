@@ -110,7 +110,7 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 				DynamicRegistration: false,
 			},
 			RenameProvider: &protocol.RenameOptions{
-				PrepareProvider: true,
+				PrepareProvider: false,
 			},
 			ImplementationProvider: &protocol.ImplementationTextDocumentClientCapabilities{
 				DynamicRegistration: false,
