@@ -187,8 +187,13 @@ type Span struct {
 	End   Location
 }
 
+type DocumentEdit struct {
+	URI   uri.URI
+	Edits []Edit
+}
+
 type Edit struct {
-	Span
+	Location
 	NewText string
 }
 
@@ -382,7 +387,7 @@ func (m *BinManager) PrepareRename(ctx context.Context, file uri.URI, line, col 
 	return err
 }
 
-func (m *BinManager) Rename(ctx context.Context, file uri.URI, line, col uint32, newName string) ([]Edit, error) {
+func (m *BinManager) Rename(ctx context.Context, file uri.URI, line, col uint32, newName string) ([]DocumentEdit, error) {
 	target := SpanFromLSPLocation(file, line, col).Gno2GenGo().Position()
 	slog.Info("rename", "uri", file, "line", line, "col", col, "target", target)
 
@@ -395,8 +400,9 @@ func (m *BinManager) Rename(ctx context.Context, file uri.URI, line, col uint32,
 	if err != nil {
 		return nil, err
 	}
-	var edits []Edit
+	var docEdits []DocumentEdit
 	for _, f := range diffs {
+		var docEdit DocumentEdit
 		for _, h := range f.Hunks {
 			var lineCount uint32
 			for _, line := range strings.Split(string(h.Body), "\n") {
@@ -408,21 +414,24 @@ func (m *BinManager) Rename(ctx context.Context, file uri.URI, line, col uint32,
 						break
 					case '+': // add line, found the newText
 						newText := line[1:] + "\n"
-						edits = append(edits, Edit{
-							Span: Span{
-								URI: uri.File(f.NewName),
-								Start: Location{
-									Line:   uint32(h.NewStartLine) + lineCount,
-									Column: 1,
-								},
-							}.GenGo2Gno(),
-							NewText: newText,
+						span := Span{
+							URI: uri.File(f.NewName),
+							Start: Location{
+								Line:   uint32(h.NewStartLine) + lineCount,
+								Column: 1,
+							},
+						}.GenGo2Gno()
+						docEdit.URI = span.URI
+						docEdit.Edits = append(docEdit.Edits, Edit{
+							Location: span.Start,
+							NewText:  newText,
 						})
 						lineCount++
 					}
 				}
 			}
 		}
+		docEdits = append(docEdits, docEdit)
 	}
-	return edits, nil
+	return docEdits, nil
 }

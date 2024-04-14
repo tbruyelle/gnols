@@ -60,51 +60,63 @@ func Hey() {}
 }
 -- expected/rename_Hey_to_ByeBye.json --
 {
-  "changes": {
-    "file://$WORK/x.gno": [
-      {
-        "newText": "\tByeBye()\n",
-        "range": {
-          "end": {
-            "character": 0,
-            "line": 4
-          },
-          "start": {
-            "character": 0,
-            "line": 3
+  "documentChanges": [
+    {
+      "edits": [
+        {
+          "newText": "\tByeBye()\n",
+          "range": {
+            "end": {
+              "character": 0,
+              "line": 4
+            },
+            "start": {
+              "character": 0,
+              "line": 3
+            }
+          }
+        },
+        {
+          "newText": "\tByeBye()\n",
+          "range": {
+            "end": {
+              "character": 0,
+              "line": 8
+            },
+            "start": {
+              "character": 0,
+              "line": 7
+            }
           }
         }
-      },
-      {
-        "newText": "\tByeBye()\n",
-        "range": {
-          "end": {
-            "character": 0,
-            "line": 8
-          },
-          "start": {
-            "character": 0,
-            "line": 7
-          }
-        }
+      ],
+      "textDocument": {
+        "uri": "file://$WORK/x.gno",
+        "version": null
       }
-    ],
-    "file://$WORK/y.gno": [
-      {
-        "newText": "func ByeBye() {}\n",
-        "range": {
-          "end": {
-            "character": 0,
-            "line": 3
-          },
-          "start": {
-            "character": 0,
-            "line": 2
+    },
+    {
+      "edits": [
+        {
+          "newText": "func ByeBye() {}\n",
+          "range": {
+            "end": {
+              "character": 0,
+              "line": 3
+            },
+            "start": {
+              "character": 0,
+              "line": 2
+            }
           }
         }
+      ],
+      "textDocument": {
+        "uri": "file://$WORK/y.gno",
+        "version": null
       }
-    ]
-  }
+    }
+  ]
 }
 -- input/rename_Hey_to_Yo.json --
 {
@@ -119,49 +131,61 @@ func Hey() {}
 }
 -- expected/rename_Hey_to_Yo.json --
 {
-  "changes": {
-    "file://$WORK/x.gno": [
-      {
-        "newText": "\tYo()\n",
-        "range": {
-          "end": {
-            "character": 0,
-            "line": 4
-          },
-          "start": {
-            "character": 0,
-            "line": 3
+  "documentChanges": [
+    {
+      "edits": [
+        {
+          "newText": "\tYo()\n",
+          "range": {
+            "end": {
+              "character": 0,
+              "line": 4
+            },
+            "start": {
+              "character": 0,
+              "line": 3
+            }
+          }
+        },
+        {
+          "newText": "\tYo()\n",
+          "range": {
+            "end": {
+              "character": 0,
+              "line": 8
+            },
+            "start": {
+              "character": 0,
+              "line": 7
+            }
           }
         }
-      },
-      {
-        "newText": "\tYo()\n",
-        "range": {
-          "end": {
-            "character": 0,
-            "line": 8
-          },
-          "start": {
-            "character": 0,
-            "line": 7
-          }
-        }
+      ],
+      "textDocument": {
+        "uri": "file://$WORK/x.gno",
+        "version": null
       }
-    ],
-    "file://$WORK/y.gno": [
-      {
-        "newText": "func Yo() {}\n",
-        "range": {
-          "end": {
-            "character": 0,
-            "line": 3
-          },
-          "start": {
-            "character": 0,
-            "line": 2
+    },
+    {
+      "edits": [
+        {
+          "newText": "func Yo() {}\n",
+          "range": {
+            "end": {
+              "character": 0,
+              "line": 3
+            },
+            "start": {
+              "character": 0,
+              "line": 2
+            }
           }
         }
+      ],
+      "textDocument": {
+        "uri": "file://$WORK/y.gno",
+        "version": null
       }
-    ]
-  }
+    }
+  ]
 }
