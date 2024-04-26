@@ -102,19 +102,12 @@ func (h *handler) handleInitialize(ctx context.Context, reply jsonrpc2.Replier, 
 					IncludeText: true,
 				},
 			},
-			DefinitionProvider: &protocol.DefinitionTextDocumentClientCapabilities{
-				DynamicRegistration: false,
-				LinkSupport:         false,
-			},
-			ReferencesProvider: &protocol.ReferencesTextDocumentClientCapabilities{
-				DynamicRegistration: false,
-			},
+			DefinitionProvider: &protocol.DefinitionOptions{},
+			ReferencesProvider: &protocol.ReferencesOptions{},
 			RenameProvider: &protocol.RenameOptions{
 				PrepareProvider: false,
 			},
-			ImplementationProvider: &protocol.ImplementationTextDocumentClientCapabilities{
-				DynamicRegistration: false,
-			},
+			ImplementationProvider: &protocol.ImplementationOptions{},
 			CompletionProvider: &protocol.CompletionOptions{
 				TriggerCharacters: []string{"."},
 				ResolveProvider:   false,
