@@ -70,6 +70,16 @@ func TestScripts(t *testing.T) {
 				<-serverConn.Done()
 			})
 
+			env.Setenv("GOBIN", filepath.Join(os.Getenv("HOME"), "go", "bin"))
+			/*
+				NOTE disabled until a txtar requires to have access to the gno repo
+				gnoPath := os.Getenv("GNOPATH")
+				if gnoPath == "" {
+					t.Fatal("must GNOPATH env to gno repo directory")
+				}
+				env.Setenv("GNOPATH", gnoPath)
+			*/
+
 			return nil
 		},
 		Dir: "testdata",

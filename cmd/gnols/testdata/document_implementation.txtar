@@ -36,9 +36,9 @@ func (Y) Hello() {}
 -- input/didChangeConfiguration.json --
 {
 	"settings": {
-		"gno":              "/home/tom/go/bin/gno",
-		"gopls":            "/home/tom/go/bin/gopls",
-		"root":             "/home/tom/src/gno",
+		"gno":              "$GOBIN/gno",
+		"gopls":            "$GOBIN/gopls",
+		"root":             "$GNOPATH",
 		"precompileOnSave": true,
 		"buildOnSave":      true
 	}
