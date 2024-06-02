@@ -3,7 +3,7 @@ CURR_SHA=$(shell git rev-parse --verify HEAD)
 
 LDFLAGS=-ldflags "-s -w -X main.version=$(LAST_TAG)"
 
-.PHONY: release symbols gob json
+.PHONY: release symbols gob json deps
 
 all: build
 
@@ -11,6 +11,10 @@ all: build
 release:
 	git tag $(tag)
 	git push origin $(tag)
+
+deps:
+	go install golang.org/x/tools/gopls@v0.15.3
+	go install github.com/gnolang/gno/gnovm/cmd/gno@latest
 
 build:
 	GOOS=$(os) GOARCH=$(arch) go build ${LDFLAGS} -o bin/$(exe) ./cmd/gnols
