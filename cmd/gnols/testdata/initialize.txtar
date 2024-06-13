@@ -2,10 +2,10 @@ lsp initialize input/initialize.json
 cmp output/initialize.json expected/initialize.json
 
 lsp initialized input/initialized.json
-cmp output/initialized.json expected/empty.json
+cmp output/initialized.json expected/initialized.json
 
 lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
-cmp output/didChangeConfiguration.json expected/empty.json
+cmp output/didChangeConfiguration.json expected/didChangeConfiguration.json
 -- input/initialize.json --
 {
 	"rootUri": "file://$WORK"
@@ -54,5 +54,7 @@ cmp output/didChangeConfiguration.json expected/empty.json
     }
   }
 }
--- expected/empty.json --
+-- expected/initialized.json --
+null
+-- expected/didChangeConfiguration.json --
 null

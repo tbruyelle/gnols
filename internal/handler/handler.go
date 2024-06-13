@@ -15,6 +15,8 @@ type handler struct {
 	connPool   jsonrpc2.Conn
 	documents  *store.DocumentStore
 	binManager *gno.BinManager
+	// initialized becomes true after `initialize` message is received.
+	initialized bool
 	// NOTE(tb): See why [here](https://github.com/tbruyelle/gnols/issues/11)
 	configLoaded chan struct{}
 
@@ -40,9 +42,18 @@ func (h *handler) getBinManager() *gno.BinManager {
 
 func (h *handler) handle(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
 	slog.Info("handle", "method", req.Method())
+	if req.Method() == protocol.MethodInitialize {
+		err := h.handleInitialize(ctx, reply, req)
+		if err != nil {
+			return err
+		}
+		h.initialized = true
+		return nil
+	}
+	if !h.initialized {
+		return replyErr(ctx, reply, jsonrpc2.NewError(jsonrpc2.ServerNotInitialized, "server not initialized"))
+	}
 	switch req.Method() {
-	case protocol.MethodInitialize:
-		return h.handleInitialize(ctx, reply, req)
 	case protocol.MethodInitialized:
 		return reply(ctx, nil, nil)
 	case protocol.MethodWorkspaceDidChangeConfiguration:
@@ -132,6 +143,10 @@ func (h *handler) handleShutdown(ctx context.Context, reply jsonrpc2.Replier, _ 
 }
 
 func (h *handler) notify(ctx context.Context, method string, params any) {
+	if !h.initialized && method != "exit" {
+		// Skip notification if not initialized except for `exit` method.
+		return
+	}
 	err := h.connPool.Notify(ctx, method, params)
 	if err != nil {
 		slog.Error("notify error", "err", err)
