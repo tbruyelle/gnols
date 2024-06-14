@@ -44,7 +44,8 @@ func Hey() {}
 -- input/didOpen_x.json --
 {
 	"textDocument": {
-		"uri":"file://$WORK/x.gno"
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
 	}
 }
 -- input/definition_x_3_5.json --

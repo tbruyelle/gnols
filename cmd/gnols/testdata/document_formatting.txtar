@@ -9,8 +9,7 @@ cmpenv output/formatting.json expected/formatting.json
 -- x.gno --
 package foo
 
-func Hello() {
-}
+func   Hello(){}
 -- input/initialize.json --
 {
 	"rootUri": "file://$WORK"
@@ -31,7 +30,7 @@ func Hello() {
 {
 	"textDocument": {
 		"uri":"file://$WORK/x.gno",
-		"text":"package foo\n\nfunc   Hello(){}"
+		"text":"${FILE_x.gno}"
 	}
 }
 -- input/formatting.json --
@@ -46,8 +45,8 @@ func Hello() {
     "newText": "package foo\n\nfunc Hello() {}\n",
     "range": {
       "end": {
-        "character": 16,
-        "line": 2
+        "character": 0,
+        "line": 3
       },
       "start": {
         "character": 0,

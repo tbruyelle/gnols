@@ -46,13 +46,15 @@ func Bye() {
 -- input/didOpen_x.json --
 {
 	"textDocument": {
-		"uri":"file://$WORK/x.gno"
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
 	}
 }
 -- input/didOpen_y.json --
 {
 	"textDocument": {
-		"uri":"file://$WORK/y.gno"
+		"uri":"file://$WORK/y.gno",
+		"text":"${FILE_y.gno}"
 	}
 }
 -- expected/notify1.json --

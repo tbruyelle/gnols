@@ -46,7 +46,8 @@ func (Y) Hello() {}
 -- input/didOpen_x.json --
 {
 	"textDocument": {
-		"uri":"file://$WORK/x.gno"
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
 	}
 }
 -- input/implementation_helloer.json --

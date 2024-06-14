@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -108,6 +109,16 @@ func call(ts *testscript.TestScript, method string, paramFile string) {
 	paramStr := ts.ReadFile(paramFile)
 	// Replace $WORK with real path
 	paramStr = os.Expand(paramStr, func(key string) string {
+		if strings.HasPrefix(key, "FILE_") {
+			// replace with the corresponding file
+			fileContent := ts.ReadFile(key[5:])
+			// Escape fileContent for JSON format
+			bz, err := json.Marshal(fileContent)
+			if err != nil {
+				ts.Fatalf("encode key %s %q: %v", key, fileContent, err)
+			}
+			return string(bz[1 : len(bz)-1]) // remove quote wrapping
+		}
 		return ts.Getenv(key)
 	})
 	var params any
