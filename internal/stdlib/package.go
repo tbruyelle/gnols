@@ -12,6 +12,7 @@ type Symbol struct {
 	Doc       string
 	Signature string
 	Kind      string
+	Recv      string
 }
 
 type Package struct {

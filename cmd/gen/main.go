@@ -77,7 +77,6 @@ func walkLib(path string) []string {
 		}
 		return nil
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -109,7 +108,6 @@ func walkPkg(path string) []string {
 
 		return nil
 	})
-
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +139,7 @@ func getSymbols(source string) []stdlib.Symbol {
 	ast.Inspect(file, func(n ast.Node) bool {
 		var found []stdlib.Symbol
 
-		switch n.(type) {
+		switch n := n.(type) {
 		case *ast.FuncDecl:
 			found = function(n, text)
 		case *ast.GenDecl:
@@ -194,15 +192,13 @@ func toGob(pkgs []stdlib.Package) {
 	dataFile.Close()
 }
 
-func declaration(n ast.Node, source string) []stdlib.Symbol {
-	sym, _ := n.(*ast.GenDecl)
-
-	for _, spec := range sym.Specs {
+func declaration(n *ast.GenDecl, source string) []stdlib.Symbol {
+	for _, spec := range n.Specs {
 		switch t := spec.(type) { //nolint:gocritic
 		case *ast.TypeSpec:
 			return []stdlib.Symbol{{
 				Name:      t.Name.Name,
-				Doc:       sym.Doc.Text(),
+				Doc:       n.Doc.Text(),
 				Signature: strings.Split(source[t.Pos()-1:t.End()-1], " {")[0],
 				Kind:      typeName(*t),
 			}}
@@ -212,26 +208,26 @@ func declaration(n ast.Node, source string) []stdlib.Symbol {
 	return nil
 }
 
-func function(n ast.Node, source string) []stdlib.Symbol {
-	sym, _ := n.(*ast.FuncDecl)
+func function(n *ast.FuncDecl, source string) []stdlib.Symbol {
+	var recv string
+	if n.Recv != nil {
+		switch x := n.Recv.List[0].Type.(type) {
+		case *ast.StarExpr:
+			recv = x.X.(*ast.Ident).Name
+		case *ast.Ident:
+			recv = x.Name
+		}
+		if !ast.IsExported(recv) {
+			return nil
+		}
+	}
 	return []stdlib.Symbol{{
-		Name:      sym.Name.Name,
-		Doc:       sym.Doc.Text(),
-		Signature: strings.Split(source[sym.Pos()-1:sym.End()-1], " {")[0],
+		Name:      n.Name.Name,
+		Doc:       n.Doc.Text(),
+		Signature: strings.Split(source[n.Pos()-1:n.End()-1], " {")[0],
 		Kind:      "func",
+		Recv:      recv,
 	}}
-
-	// sym.Recv != nil
-	//
-	// root, starOk := sym.Recv.List[0].Type.(*ast.StarExpr)
-	// if !starOk {
-	//  return nil
-	// }
-	// ident, idOk := root.X.(*ast.Ident)
-	// if !idOk {
-	//  return nil
-	// }
-	// fmt.Println(sym.Name.Name, "(", ident.Name, ")")
 }
 
 func typeName(t ast.TypeSpec) string {

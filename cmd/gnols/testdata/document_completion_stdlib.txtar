@@ -48,10 +48,24 @@ func Hello() {
 -- expected/completion.json --
 [
   {
+    "detail": "func Println(args ...interface{})",
+    "documentation": "Println formats using the default formats for its operands and writes to standard output.\nPrintln writes the given arguments to standard output with spaces between arguments\nand a newline at the end.\n",
+    "insertText": "Println",
+    "kind": 3,
+    "label": "Println"
+  },
+  {
     "detail": "func Sprintf(format string, args ...interface{}) string",
     "documentation": "Sprintf offers similar functionality to Go's fmt.Sprintf, or the sprintf\nequivalent available in many languages, including C/C++.\nThe number of args passed must exactly match the arguments consumed by the format.\nA limited number of formatting verbs and features are currently supported,\nhence the name ufmt (µfmt, micro-fmt).\n\nThe currently formatted verbs are the following:\n\n\t%s: places a string value directly.\n\t    If the value implements the interface interface{ String() string },\n\t    the String() method is called to retrieve the value.\n\t%d: formats an integer value using package \"strconv\".\n\t    Currently supports only uint, uint64, int, int64.\n\t%t: formats a boolean value to \"true\" or \"false\".\n\t%%: outputs a literal %. Does not consume an argument.\n",
     "insertText": "Sprintf",
     "kind": 3,
     "label": "Sprintf"
+  },
+  {
+    "detail": "func Errorf(format string, args ...interface{}) error",
+    "documentation": "Errorf is a function that mirrors the functionality of fmt.Errorf.\n\nIt takes a format string and arguments to create a formatted string,\nthen sets this string as the 'msg' field of an errMsg struct and returns a pointer to this struct.\n\nThis function operates in a similar manner to Go's fmt.Errorf,\nproviding a way to create formatted error messages.\n\nThe currently formatted verbs are the following:\n\n\t%s: places a string value directly.\n\t    If the value implements the interface interface{ String() string },\n\t    the String() method is called to retrieve the value.\n\t%d: formats an integer value using package \"strconv\".\n\t    Currently supports only uint, uint64, int, int64.\n\t%t: formats a boolean value to \"true\" or \"false\".\n\t%%: outputs a literal %. Does not consume an argument.\n",
+    "insertText": "Errorf",
+    "kind": 3,
+    "label": "Errorf"
   }
 ]
