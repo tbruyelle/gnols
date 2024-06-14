@@ -1,14 +1,18 @@
 package handler
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/jdkato/gnols/internal/stdlib"
+)
 
 func TestLookupPkg(t *testing.T) {
-	pkg := lookupPkg("fmt")
+	pkg := lookupPkg(stdlib.Packages, "fmt")
 	if pkg != nil {
 		t.Errorf("Expected nil, got %v", pkg)
 	}
 
-	pkg = lookupPkg("ufmt")
+	pkg = lookupPkg(stdlib.Packages, "ufmt")
 	if pkg == nil {
 		t.Errorf("Expected non-nil, got %v", pkg)
 	}

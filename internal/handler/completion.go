@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/jdkato/gnols/internal/gno"
+	"github.com/jdkato/gnols/internal/stdlib"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
@@ -19,7 +21,6 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	if !ok {
 		return replyNoDocFound(ctx, reply, params.TextDocument.URI)
 	}
-	items := []protocol.CompletionItem{}
 
 	token, err := doc.TokenAt(params.Position)
 	if err != nil {
@@ -27,21 +28,29 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	}
 	text := strings.TrimSpace(token.Text)
 
-	// Extract pkg from text
+	// Extract symbol name and prefix from text
+	// TODO handle multiple dots like Struct.A.B
 	var (
-		pkgName = text
-		prefix  string
+		symbolName = text
+		prefix     string
 	)
 	if i := strings.IndexByte(text, '.'); i > 0 {
-		pkgName = text[:i]
+		symbolName = text[:i]
 		if i != len(text)-1 {
 			prefix = text[i+1:]
 		}
 	}
-	slog.Info("completion", "text", text, "pkgName", pkgName, "prefix", prefix)
+	slog.Info("completion", "text", text, "symbol", symbolName, "prefix", prefix)
 
-	pkg := lookupPkg(pkgName)
-	if pkg != nil {
+	items := []protocol.CompletionItem{}
+	for _, pkgs := range [][]gno.Package{
+		h.packages,      // Check in workspace's packages
+		stdlib.Packages, // Check in stdlib and examples packages
+	} {
+		pkg := lookupPkg(pkgs, symbolName)
+		if pkg == nil {
+			continue
+		}
 		for _, s := range pkg.Symbols {
 			if s.Recv != "" {
 				// skip symbols with receiver (methods)
@@ -60,6 +69,5 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 			})
 		}
 	}
-
 	return reply(ctx, items, nil)
 }

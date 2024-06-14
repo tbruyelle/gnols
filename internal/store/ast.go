@@ -10,7 +10,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/jdkato/gnols/internal/stdlib"
+	"github.com/jdkato/gnols/internal/gno"
 )
 
 // A ParsedGnoFile contains the results of parsing a Gno file.
@@ -37,7 +37,7 @@ func (d *Document) ApplyChangesToAst(path, content string) {
 	d.Pgf = NewParsedGnoFile(path, content)
 }
 
-func (d *Document) LookupSymbol(name string, offset int) *stdlib.Symbol {
+func (d *Document) LookupSymbol(name string, offset int) *gno.Symbol {
 	conf := types.Config{Importer: importer.Default(), Error: func(err error) { slog.Info(err.Error()) }}
 	info := &types.Info{
 		Defs:  make(map[*ast.Ident]types.Object),
@@ -61,7 +61,7 @@ func (d *Document) LookupSymbol(name string, offset int) *stdlib.Symbol {
 		if !strings.Contains(typeName, "invalid") {
 			// FIXME: `std` types are "invalid" since Go doesn't know about
 			// them.
-			return &stdlib.Symbol{
+			return &gno.Symbol{
 				Name:      obj.Name(),
 				Signature: obj.String(),
 				Kind:      obj.Type().String(),

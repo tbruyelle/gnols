@@ -9,6 +9,7 @@ import (
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 
+	"github.com/jdkato/gnols/internal/gno"
 	"github.com/jdkato/gnols/internal/stdlib"
 )
 
@@ -35,7 +36,7 @@ func posToRange(line int, span []int) *protocol.Range {
 	}
 }
 
-func lookupSymbol(pkg, symbol string) *stdlib.Symbol {
+func lookupSymbol(pkg, symbol string) *gno.Symbol {
 	for _, p := range stdlib.Packages {
 		if p.Name == pkg {
 			for _, s := range p.Symbols {
@@ -48,7 +49,7 @@ func lookupSymbol(pkg, symbol string) *stdlib.Symbol {
 	return nil
 }
 
-func lookupSymbolByImports(symbol string, imports []*ast.ImportSpec) *stdlib.Symbol {
+func lookupSymbolByImports(symbol string, imports []*ast.ImportSpec) *gno.Symbol {
 	for _, spec := range imports {
 		value := spec.Path.Value
 
@@ -64,8 +65,8 @@ func lookupSymbolByImports(symbol string, imports []*ast.ImportSpec) *stdlib.Sym
 	return nil
 }
 
-func lookupPkg(pkg string) *stdlib.Package {
-	for _, p := range stdlib.Packages {
+func lookupPkg(pkgs []gno.Package, pkg string) *gno.Package {
+	for _, p := range pkgs {
 		if p.Name == pkg {
 			return &p
 		}

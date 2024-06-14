@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"go.lsp.dev/jsonrpc2"
@@ -12,8 +13,10 @@ import (
 )
 
 type handler struct {
-	connPool   jsonrpc2.Conn
-	documents  *store.DocumentStore
+	connPool  jsonrpc2.Conn
+	documents *store.DocumentStore
+	// packages contains the workspace's packages.
+	packages   []gno.Package
 	binManager *gno.BinManager
 	// initialized becomes true after `initialize` message is received.
 	initialized bool
@@ -159,4 +162,14 @@ func (h *handler) notifyErr(ctx context.Context, err error) {
 		Message: err.Error(),
 		Type:    protocol.MessageTypeError,
 	})
+}
+
+func (h *handler) updatePackages() error {
+	pkgs, err := gno.ParsePackages(h.workspaceFolder)
+	if err != nil {
+		return fmt.Errorf("updatePackages: %w", err)
+	}
+	slog.Info("update workspace packages", "pkgs", pkgs)
+	h.packages = pkgs
+	return nil
 }
