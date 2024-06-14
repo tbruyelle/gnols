@@ -1,0 +1,106 @@
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+lsp textDocument/completion input/completion.json
+cmpenv output/completion.json expected/completion.json
+-- x.gno --
+package foo
+
+func Hello() {
+	strconv.
+}
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "$GOBIN/gno",
+		"gopls":            "$GOBIN/gopls",
+		"root":             "$GNOPATH",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
+	}
+}
+-- input/completion.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"character": 9,
+		"line": 3
+	}
+}
+-- expected/completion.json --
+[
+  {
+    "detail": "func Itoa(n int) string",
+    "documentation": "",
+    "insertText": "Itoa",
+    "kind": 3,
+    "label": "Itoa"
+  },
+  {
+    "detail": "func AppendUint(dst []byte, i uint64, base int) []byte",
+    "documentation": "",
+    "insertText": "AppendUint",
+    "kind": 3,
+    "label": "AppendUint"
+  },
+  {
+    "detail": "func Atoi(s string) (int, error)",
+    "documentation": "",
+    "insertText": "Atoi",
+    "kind": 3,
+    "label": "Atoi"
+  },
+  {
+    "detail": "func CanBackquote(s string) bool",
+    "documentation": "",
+    "insertText": "CanBackquote",
+    "kind": 3,
+    "label": "CanBackquote"
+  },
+  {
+    "detail": "func FormatInt(i int64, base int) string",
+    "documentation": "",
+    "insertText": "FormatInt",
+    "kind": 3,
+    "label": "FormatInt"
+  },
+  {
+    "detail": "func FormatUint(i uint64, base int) string",
+    "documentation": "",
+    "insertText": "FormatUint",
+    "kind": 3,
+    "label": "FormatUint"
+  },
+  {
+    "detail": "func Quote(s string) string",
+    "documentation": "",
+    "insertText": "Quote",
+    "kind": 3,
+    "label": "Quote"
+  },
+  {
+    "detail": "func QuoteToASCII(s string) string",
+    "documentation": "",
+    "insertText": "QuoteToASCII",
+    "kind": 3,
+    "label": "QuoteToASCII"
+  }
+]
