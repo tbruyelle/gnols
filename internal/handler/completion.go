@@ -31,6 +31,10 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	pkg := lookupPkg(text)
 	if pkg != nil {
 		for _, s := range pkg.Symbols {
+			if s.Recv != "" {
+				// skip symbols with receivers
+				continue
+			}
 			items = append(items, protocol.CompletionItem{
 				Label:         s.Name,
 				InsertText:    s.Name,

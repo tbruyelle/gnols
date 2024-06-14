@@ -1,0 +1,155 @@
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+lsp textDocument/completion input/completion.json
+cmpenv output/completion.json expected/completion.json
+-- x.gno --
+package foo
+
+func Hello() {
+	bufio.
+}
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "$GOBIN/gno",
+		"gopls":            "$GOBIN/gopls",
+		"root":             "$GNOPATH",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
+	}
+}
+-- input/completion.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"character": 7,
+		"line": 3
+	}
+}
+-- expected/completion.json --
+[
+  {
+    "detail": "Reader struct",
+    "documentation": "Reader implements buffering for an io.Reader object.\n",
+    "insertText": "Reader",
+    "kind": 22,
+    "label": "Reader"
+  },
+  {
+    "detail": "func NewReaderSize(rd io.Reader, size int) *Reader",
+    "documentation": "NewReaderSize returns a new Reader whose buffer has at least the specified\nsize. If the argument io.Reader is already a Reader with large enough\nsize, it returns the underlying Reader.\n",
+    "insertText": "NewReaderSize",
+    "kind": 3,
+    "label": "NewReaderSize"
+  },
+  {
+    "detail": "func NewReader(rd io.Reader) *Reader",
+    "documentation": "NewReader returns a new Reader whose buffer has the default size.\n",
+    "insertText": "NewReader",
+    "kind": 3,
+    "label": "NewReader"
+  },
+  {
+    "detail": "Writer struct",
+    "documentation": "Writer implements buffering for an io.Writer object.\nIf an error occurs writing to a Writer, no more data will be\naccepted and all subsequent writes, and Flush, will return the error.\nAfter all data has been written, the client should call the\nFlush method to guarantee all data has been forwarded to\nthe underlying io.Writer.\n",
+    "insertText": "Writer",
+    "kind": 22,
+    "label": "Writer"
+  },
+  {
+    "detail": "func NewWriterSize(w io.Writer, size int) *Writer",
+    "documentation": "NewWriterSize returns a new Writer whose buffer has at least the specified\nsize. If the argument io.Writer is already a Writer with large enough\nsize, it returns the underlying Writer.\n",
+    "insertText": "NewWriterSize",
+    "kind": 3,
+    "label": "NewWriterSize"
+  },
+  {
+    "detail": "func NewWriter(w io.Writer) *Writer",
+    "documentation": "NewWriter returns a new Writer whose buffer has the default size.\n",
+    "insertText": "NewWriter",
+    "kind": 3,
+    "label": "NewWriter"
+  },
+  {
+    "detail": "ReadWriter struct",
+    "documentation": "ReadWriter stores pointers to a Reader and a Writer.\nIt implements io.ReadWriter.\n",
+    "insertText": "ReadWriter",
+    "kind": 22,
+    "label": "ReadWriter"
+  },
+  {
+    "detail": "func NewReadWriter(r *Reader, w *Writer) *ReadWriter",
+    "documentation": "NewReadWriter allocates a new ReadWriter that dispatches to r and w.\n",
+    "insertText": "NewReadWriter",
+    "kind": 3,
+    "label": "NewReadWriter"
+  },
+  {
+    "detail": "Scanner struct",
+    "documentation": "Scanner provides a convenient interface for reading data such as\na file of newline-delimited lines of text. Successive calls to\nthe Scan method will step through the 'tokens' of a file, skipping\nthe bytes between the tokens. The specification of a token is\ndefined by a split function of type SplitFunc; the default split\nfunction breaks the input into lines with line termination stripped. Split\nfunctions are defined in this package for scanning a file into\nlines, bytes, UTF-8-encoded runes, and space-delimited words. The\nclient may instead provide a custom split function.\n\nScanning stops unrecoverably at EOF, the first I/O error, or a token too\nlarge to fit in the buffer. When a scan stops, the reader may have\nadvanced arbitrarily far past the last token. Programs that need more\ncontrol over error handling or large tokens, or must run sequential scans\non a reader, should use bufio.Reader instead.\n",
+    "insertText": "Scanner",
+    "kind": 22,
+    "label": "Scanner"
+  },
+  {
+    "detail": "SplitFunc func(data []byte, atEOF bool) (advance int, token []byte, err error)",
+    "documentation": "SplitFunc is the signature of the split function used to tokenize the\ninput. The arguments are an initial substring of the remaining unprocessed\ndata and a flag, atEOF, that reports whether the Reader has no more data\nto give. The return values are the number of bytes to advance the input\nand the next token to return to the user, if any, plus an error, if any.\n\nScanning stops if the function returns an error, in which case some of\nthe input may be discarded. If that error is ErrFinalToken, scanning\nstops with no error.\n\nOtherwise, the Scanner advances the input. If the token is not nil,\nthe Scanner returns it to the user. If the token is nil, the\nScanner reads more data and continues scanning; if there is no more\ndata--if atEOF was true--the Scanner returns. If the data does not\nyet hold a complete token, for instance if it has no newline while\nscanning lines, a SplitFunc can return (0, nil, nil) to signal the\nScanner to read more data into the slice and try again with a\nlonger slice starting at the same point in the input.\n\nThe function is never called with an empty data slice unless atEOF\nis true. If atEOF is true, however, data may be non-empty and,\nas always, holds unprocessed text.\n",
+    "insertText": "SplitFunc",
+    "kind": 7,
+    "label": "SplitFunc"
+  },
+  {
+    "detail": "func NewScanner(r io.Reader) *Scanner",
+    "documentation": "NewScanner returns a new Scanner to read from r.\nThe split function defaults to ScanLines.\n",
+    "insertText": "NewScanner",
+    "kind": 3,
+    "label": "NewScanner"
+  },
+  {
+    "detail": "func ScanBytes(data []byte, atEOF bool) (advance int, token []byte, err error)",
+    "documentation": "ScanBytes is a split function for a Scanner that returns each byte as a token.\n",
+    "insertText": "ScanBytes",
+    "kind": 3,
+    "label": "ScanBytes"
+  },
+  {
+    "detail": "func ScanRunes(data []byte, atEOF bool) (advance int, token []byte, err error)",
+    "documentation": "ScanRunes is a split function for a Scanner that returns each\nUTF-8-encoded rune as a token. The sequence of runes returned is\nequivalent to that from a range loop over the input as a string, which\nmeans that erroneous UTF-8 encodings translate to U+FFFD = \"\\xef\\xbf\\xbd\".\nBecause of the Scan interface, this makes it impossible for the client to\ndistinguish correctly encoded replacement runes from encoding errors.\n",
+    "insertText": "ScanRunes",
+    "kind": 3,
+    "label": "ScanRunes"
+  },
+  {
+    "detail": "func ScanLines(data []byte, atEOF bool) (advance int, token []byte, err error)",
+    "documentation": "ScanLines is a split function for a Scanner that returns each line of\ntext, stripped of any trailing end-of-line marker. The returned line may\nbe empty. The end-of-line marker is one optional carriage return followed\nby one mandatory newline. In regular expression notation, it is `\\r?\\n`.\nThe last non-empty line of input will be returned even if it has no\nnewline.\n",
+    "insertText": "ScanLines",
+    "kind": 3,
+    "label": "ScanLines"
+  },
+  {
+    "detail": "func ScanWords(data []byte, atEOF bool) (advance int, token []byte, err error)",
+    "documentation": "ScanWords is a split function for a Scanner that returns each\nspace-separated word of text, with surrounding spaces deleted. It will\nnever return an empty string. The definition of space is set by\nunicode.IsSpace.\n",
+    "insertText": "ScanWords",
+    "kind": 3,
+    "label": "ScanWords"
+  }
+]
