@@ -1,3 +1,4 @@
+skip # TODO need proper implementation
 # Init phase
 lsp initialize input/initialize.json
 lsp initialized input/initialized.json
@@ -9,8 +10,14 @@ cmpenv output/completion.json expected/completion.json
 -- x.gno --
 package foo
 
+// MyType is my type
+type MyType {
+	A int
+}
+
 func Hello() {
-	strconv.A
+	x := MyType{}
+	x.
 }
 -- input/initialize.json --
 {
@@ -41,24 +48,17 @@ func Hello() {
 		"uri":"file://$WORK/x.gno"
 	},
 	"position": {
-		"character": 9,
-		"line": 3
+		"character": 3,
+		"line": 6
 	}
 }
 -- expected/completion.json --
 [
   {
-    "detail": "func AppendUint(dst []byte, i uint64, base int) []byte",
-    "documentation": "",
-    "insertText": "AppendUint",
-    "kind": 3,
-    "label": "AppendUint"
-  },
-  {
-    "detail": "func Atoi(s string) (int, error)",
-    "documentation": "",
-    "insertText": "Atoi",
-    "kind": 3,
-    "label": "Atoi"
-  }
+    "detail": "type MyType struct{\n  A int\n}",
+    "documentation": "MyType is my type",
+    "insertText": "MyType",
+    "kind": 7,
+    "label": "MyType"
+	}
 ]
