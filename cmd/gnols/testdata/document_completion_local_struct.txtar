@@ -10,7 +10,7 @@ cmpenv output/completion.json expected/completion.json
 package foo
 
 // MyType is my type
-type MyType {
+type MyType struct {
 	A int
 }
 

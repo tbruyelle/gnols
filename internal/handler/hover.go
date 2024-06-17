@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -73,7 +74,7 @@ func (h *handler) handleHover(ctx context.Context, reply jsonrpc2.Replier, req j
 			return reply(ctx, protocol.Hover{
 				Contents: protocol.MarkupContent{
 					Kind:  protocol.Markdown,
-					Value: found.String(),
+					Value: fmt.Sprintf("```go\n%s\n```\n\n%s", found.Signature, found.Doc),
 				},
 				Range: posToRange(
 					int(params.Position.Line),

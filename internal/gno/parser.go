@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type Package struct {
@@ -18,14 +20,39 @@ type Package struct {
 
 type Symbol struct {
 	Name      string
-	Doc       string
-	Signature string
+	Doc       string `json:",omitempty"`
+	Signature string `json:",omitempty"`
 	Kind      string
-	Recv      string
+	Recv      string `json:",omitempty"`
 }
 
-func (s Symbol) String() string {
-	return fmt.Sprintf("```go\n%s\n```\n\n%s", s.Signature, s.Doc)
+// func (s Symbol) String() string {
+// return fmt.Sprintf("```go\n%s\n```\n\n%s", s.Signature, s.Doc)
+// }
+
+func ParsePackage(dir, importPath string) (*Package, error) {
+	symbols := []Symbol{}
+	files, err := getFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		syms, err := getSymbols(file)
+		if err != nil {
+			return nil, err
+		}
+		symbols = append(symbols, syms...)
+	}
+	if len(symbols) == 0 {
+		// Ignore directories w/o symbols
+		return nil, nil
+	}
+
+	return &Package{
+		Name:       filepath.Base(dir),
+		ImportPath: importPath,
+		Symbols:    symbols,
+	}, nil
 }
 
 func ParsePackages(dir string) ([]Package, error) {
@@ -35,35 +62,19 @@ func ParsePackages(dir string) ([]Package, error) {
 		return nil, err
 	}
 	for _, d := range dirs {
-		symbols := []Symbol{}
-		files, err := getFiles(d)
-		if err != nil {
-			return nil, err
-		}
-		for _, file := range files {
-			syms, err := getSymbols(file)
-			if err != nil {
-				return nil, err
-			}
-			symbols = append(symbols, syms...)
-		}
-		if len(symbols) == 0 {
-			// Ignore directories w/o symbols
-			continue
-		}
-
 		// convert to import path:
 		// get path relative to dir, and convert separators to slashes.
 		ip := strings.ReplaceAll(
 			strings.TrimPrefix(d, dir+string(filepath.Separator)),
 			string(filepath.Separator), "/",
 		)
-
-		pkgs = append(pkgs, Package{
-			Name:       filepath.Base(d),
-			ImportPath: ip,
-			Symbols:    symbols,
-		})
+		pkg, err := ParsePackage(d, ip)
+		if err != nil {
+			return nil, err
+		}
+		if pkg != nil {
+			pkgs = append(pkgs, *pkg)
+		}
 	}
 	return pkgs, nil
 }
@@ -115,7 +126,10 @@ func getSymbols(filename string) ([]Symbol, error) {
 	fset := token.NewFileSet()
 
 	// Parse the file and create an AST.
-	file, _ := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+	file, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+	if err != nil {
+		fmt.Println("PARSEFILE", err)
+	}
 
 	bsrc, err := os.ReadFile(filename)
 	if err != nil {
@@ -129,11 +143,19 @@ func getSymbols(filename string) ([]Symbol, error) {
 	ast.Inspect(file, func(n ast.Node) bool {
 		var found []Symbol
 
+		fmt.Println("NODE", spew.Sdump(n))
 		switch n := n.(type) {
 		case *ast.FuncDecl:
 			found = function(n, text)
 		case *ast.GenDecl:
 			found = declaration(n, text)
+		case *ast.AssignStmt:
+			if n.Tok == token.DEFINE {
+				// new variable declaration with :=
+				found = variable(n, text)
+			}
+		case *ast.ValueSpec:
+			// TODO handle var ( x = XXX )
 		}
 
 		if found != nil {
@@ -152,7 +174,7 @@ func declaration(n *ast.GenDecl, source string) []Symbol {
 		case *ast.TypeSpec:
 			return []Symbol{{
 				Name:      t.Name.Name,
-				Doc:       n.Doc.Text(),
+				Doc:       strings.TrimSpace(n.Doc.Text()),
 				Signature: strings.Split(source[t.Pos()-1:t.End()-1], " {")[0],
 				Kind:      typeName(*t),
 			}}
@@ -181,6 +203,14 @@ func function(n *ast.FuncDecl, source string) []Symbol {
 		Signature: strings.Split(source[n.Pos()-1:n.End()-1], " {")[0],
 		Kind:      "func",
 		Recv:      recv,
+	}}
+}
+
+func variable(n *ast.AssignStmt, source string) []Symbol {
+	return []Symbol{{
+		Name:      n.Lhs[0].(*ast.Ident).Name,
+		Signature: source[n.Pos()-1 : n.End()-1],
+		Kind:      "var",
 	}}
 }
 

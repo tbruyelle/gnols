@@ -1,0 +1,32 @@
+printSymbols
+cmp stdout expected.json
+-- x.gno --
+package foo
+
+// MyType is my type
+type MyType struct {
+	A int
+}
+
+func Hello() {
+	x := MyType{}
+}
+-- expected.json --
+[
+  {
+    "Name": "MyType",
+    "Doc": "MyType is my type",
+    "Signature": "MyType struct",
+    "Kind": "struct"
+  },
+  {
+    "Name": "Hello",
+    "Signature": "func Hello()",
+    "Kind": "func"
+  },
+  {
+    "Name": "x",
+    "Signature": "x := MyType{}",
+    "Kind": "var"
+  }
+]
