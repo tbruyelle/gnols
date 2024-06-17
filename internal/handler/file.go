@@ -19,7 +19,7 @@ func (h *handler) handleTextDocumentDidOpen(ctx context.Context, reply jsonrpc2.
 	if err != nil {
 		return replyErr(ctx, reply, fmt.Errorf("documents.Save uri=%s: %w", params.TextDocument.URI, err))
 	}
-	if err := h.updatePackages(); err != nil {
+	if err := h.updateSymbols(); err != nil {
 		return replyErr(ctx, reply, err)
 	}
 	h.publishDianostics(ctx, doc)

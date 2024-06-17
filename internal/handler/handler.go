@@ -164,10 +164,10 @@ func (h *handler) notifyErr(ctx context.Context, err error) {
 	})
 }
 
-func (h *handler) updatePackages() error {
+func (h *handler) updateSymbols() error {
 	pkg, err := gno.ParsePackage(h.workspaceFolder, "")
 	if err != nil {
-		return fmt.Errorf("updatePackages: %w", err)
+		return fmt.Errorf("updateSymbols: %w", err)
 	}
 	slog.Info("update workspace packages", "symbols", pkg.Symbols)
 	h.symbols = pkg.Symbols
