@@ -8,8 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type Package struct {
@@ -23,7 +21,9 @@ type Symbol struct {
 	Doc       string `json:",omitempty"`
 	Signature string `json:",omitempty"`
 	Kind      string
-	Recv      string `json:",omitempty"`
+	Recv      string   `json:",omitempty"`
+	Fields    []Symbol `json:",omitempty"`
+	Ref       string   `json:",omitempty"`
 }
 
 // func (s Symbol) String() string {
@@ -143,7 +143,7 @@ func getSymbols(filename string) ([]Symbol, error) {
 	ast.Inspect(file, func(n ast.Node) bool {
 		var found []Symbol
 
-		fmt.Println("NODE", spew.Sdump(n))
+		// fmt.Println("NODE", spew.Sdump(n))
 		switch n := n.(type) {
 		case *ast.FuncDecl:
 			found = function(n, text)
@@ -172,11 +172,24 @@ func declaration(n *ast.GenDecl, source string) []Symbol {
 	for _, spec := range n.Specs {
 		switch t := spec.(type) { //nolint:gocritic
 		case *ast.TypeSpec:
+			var fields []Symbol
+			if st, ok := t.Type.(*ast.StructType); ok {
+				// Register struct's fields.
+				for _, f := range st.Fields.List {
+					fields = append(fields, Symbol{
+						Name:      f.Names[0].Name,
+						Doc:       strings.TrimSpace(f.Doc.Text()),
+						Signature: source[f.Pos()-1 : f.End()-1],
+						Kind:      "field",
+					})
+				}
+			}
 			return []Symbol{{
 				Name:      t.Name.Name,
 				Doc:       strings.TrimSpace(n.Doc.Text()),
 				Signature: strings.Split(source[t.Pos()-1:t.End()-1], " {")[0],
 				Kind:      typeName(*t),
+				Fields:    fields,
 			}}
 		}
 	}
@@ -211,6 +224,7 @@ func variable(n *ast.AssignStmt, source string) []Symbol {
 		Name:      n.Lhs[0].(*ast.Ident).Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
+		Ref:       n.Rhs[0].(*ast.CompositeLit).Type.(*ast.Ident).Name,
 	}}
 }
 

@@ -11,7 +11,10 @@ package foo
 
 // MyType is my type
 type MyType struct {
-	A int
+	// Foo is foo
+	Foo int
+	// Bar is bar
+	Bar string
 }
 
 func Hello() {
@@ -48,16 +51,23 @@ func Hello() {
 	},
 	"position": {
 		"character": 3,
-		"line": 9
+		"line": 12
 	}
 }
 -- expected/completion.json --
 [
   {
-    "detail": "type MyType struct{\n  A int\n}",
-    "documentation": "MyType is my type",
-    "insertText": "MyType",
-    "kind": 7,
-    "label": "MyType"
-	}
+    "detail": "Foo int",
+    "documentation": "Foo is foo",
+    "insertText": "Foo",
+    "kind": 5,
+    "label": "Foo"
+  },
+  {
+    "detail": "Bar string",
+    "documentation": "Bar is bar",
+    "insertText": "Bar",
+    "kind": 5,
+    "label": "Bar"
+  }
 ]

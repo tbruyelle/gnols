@@ -5,7 +5,9 @@ package foo
 
 // MyType is my type
 type MyType struct {
+	// A is a
 	A int
+	B string
 }
 
 func Hello() {
@@ -17,7 +19,20 @@ func Hello() {
     "Name": "MyType",
     "Doc": "MyType is my type",
     "Signature": "MyType struct",
-    "Kind": "struct"
+    "Kind": "struct",
+    "Fields": [
+      {
+        "Name": "A",
+        "Doc": "A is a",
+        "Signature": "A int",
+        "Kind": "field"
+      },
+      {
+        "Name": "B",
+        "Signature": "B string",
+        "Kind": "field"
+      }
+    ]
   },
   {
     "Name": "Hello",
@@ -27,6 +42,7 @@ func Hello() {
   {
     "Name": "x",
     "Signature": "x := MyType{}",
-    "Kind": "var"
+    "Kind": "var",
+    "Ref": "MyType"
   }
 ]

@@ -76,6 +76,8 @@ func lookupPkg(pkgs []gno.Package, pkg string) *gno.Package {
 
 func symbolToKind(symbol string) protocol.CompletionItemKind {
 	switch symbol {
+	case "field":
+		return protocol.CompletionItemKindField
 	case "const":
 		return protocol.CompletionItemKindConstant
 	case "func":

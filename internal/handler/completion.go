@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/jdkato/gnols/internal/gno"
@@ -34,6 +35,8 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 		symbolName = text
 		prefix     string
 	)
+	// TODO ensure textDocument/completion is only triggered after a dot '.' and
+	// if yes why ? Is it a client limitation or configuration, or a LSP spec?
 	if i := strings.IndexByte(text, '.'); i > 0 {
 		symbolName = text[:i]
 		if i != len(text)-1 {
@@ -43,14 +46,33 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	slog.Info("completion", "text", text, "symbol", symbolName, "prefix", prefix)
 
 	items := []protocol.CompletionItem{}
-	for _, pkgs := range [][]gno.Package{
-		h.packages,      // Check in workspace's packages
-		stdlib.Packages, // Check in stdlib and examples packages
-	} {
-		pkg := lookupPkg(pkgs, symbolName)
-		if pkg == nil {
-			continue
+	matchName := func(name string) func(gno.Symbol) bool {
+		return func(s gno.Symbol) bool { return s.Name == name }
+	}
+	if i := slices.IndexFunc(h.symbols, matchName(symbolName)); i != -1 {
+		sym := h.symbols[i]
+		switch sym.Kind {
+		case "var":
+			// find referrence type
+			if j := slices.IndexFunc(h.symbols, matchName(sym.Ref)); j != -1 {
+				for _, f := range h.symbols[j].Fields {
+					if prefix != "" && !strings.HasPrefix(f.Name, prefix) {
+						// skip symbols that doesn't match the prefix
+						continue
+					}
+					items = append(items, protocol.CompletionItem{
+						Label:         f.Name,
+						InsertText:    f.Name,
+						Kind:          symbolToKind(f.Kind),
+						Detail:        f.Signature,
+						Documentation: f.Doc,
+					})
+				}
+			}
 		}
+	}
+
+	if pkg := lookupPkg(stdlib.Packages, symbolName); pkg != nil {
 		for _, s := range pkg.Symbols {
 			if s.Recv != "" {
 				// skip symbols with receiver (methods)
