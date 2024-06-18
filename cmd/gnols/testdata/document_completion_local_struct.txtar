@@ -3,9 +3,13 @@ lsp initialize input/initialize.json
 lsp initialized input/initialized.json
 lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 lsp textDocument/didOpen input/didOpen_x.json
+lsp textDocument/didOpen input/didOpen_y.json
 
-lsp textDocument/completion input/completion.json
-cmpenv output/completion.json expected/completion.json
+lsp textDocument/completion input/completion_x.json
+cmpenv output/completion_x.json expected/completion_x.json
+
+lsp textDocument/completion input/completion_y.json
+cmpenv output/completion_y.json expected/completion_y.json
 -- x.gno --
 package foo
 
@@ -15,11 +19,24 @@ type MyType struct {
 	Foo int
 	// Bar is bar
 	Bar string
+	// Baz is baz
+	Baz Other
+}
+
+type Other struct {
+	X uint64
 }
 
 func Hello() {
 	x := MyType{}
-	x.
+	x. // completion here, should return all fields of MyType
+}
+-- y.gno --
+package foo
+
+func init() {
+	x := MyType{}
+	x.Ba // completion here, should return only fields of MyType that match 'Ba'
 }
 -- input/initialize.json --
 {
@@ -44,17 +61,24 @@ func Hello() {
 		"text":"${FILE_x.gno}"
 	}
 }
--- input/completion.json --
+-- input/didOpen_y.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/y.gno",
+		"text":"${FILE_y.gno}"
+	}
+}
+-- input/completion_x.json --
 {
 	"textDocument": {
 		"uri":"file://$WORK/x.gno"
 	},
 	"position": {
 		"character": 3,
-		"line": 12
+		"line": 18
 	}
 }
--- expected/completion.json --
+-- expected/completion_x.json --
 [
   {
     "detail": "Foo int",
@@ -69,5 +93,39 @@ func Hello() {
     "insertText": "Bar",
     "kind": 5,
     "label": "Bar"
+  },
+  {
+    "detail": "Baz Other",
+    "documentation": "Baz is baz",
+    "insertText": "Baz",
+    "kind": 5,
+    "label": "Baz"
+  }
+]
+-- input/completion_y.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/y.gno"
+	},
+	"position": {
+		"character": 4,
+		"line": 4 
+	}
+}
+-- expected/completion_y.json --
+[
+  {
+    "detail": "Bar string",
+    "documentation": "Bar is bar",
+    "insertText": "Bar",
+    "kind": 5,
+    "label": "Bar"
+  },
+  {
+    "detail": "Baz Other",
+    "documentation": "Baz is baz",
+    "insertText": "Baz",
+    "kind": 5,
+    "label": "Baz"
   }
 ]
