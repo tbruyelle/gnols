@@ -220,11 +220,17 @@ func function(n *ast.FuncDecl, source string) []Symbol {
 }
 
 func variable(n *ast.AssignStmt, source string) []Symbol {
+	var ref string
+	if cl, ok := n.Rhs[0].(*ast.CompositeLit); ok {
+		if id, ok := cl.Type.(*ast.Ident); ok {
+			ref = id.Name
+		}
+	}
 	return []Symbol{{
 		Name:      n.Lhs[0].(*ast.Ident).Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
-		Ref:       n.Rhs[0].(*ast.CompositeLit).Type.(*ast.Ident).Name,
+		Ref:       ref,
 	}}
 }
 
