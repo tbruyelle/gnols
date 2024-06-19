@@ -33,17 +33,17 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	// TODO handle multiple dots like Struct.A.B
 	var (
 		symbolName = text
-		prefix     string
+		prefixes   []string // TODO rename
 	)
 	// TODO ensure textDocument/completion is only triggered after a dot '.' and
 	// if yes why ? Is it a client limitation or configuration, or a LSP spec?
-	if i := strings.IndexByte(text, '.'); i > 0 {
-		symbolName = text[:i]
-		if i != len(text)-1 {
-			prefix = text[i+1:]
-		}
+	ss := strings.Split(text, ".")
+	symbolName = ss[0]
+	if len(ss) > 1 {
+		prefixes = ss[1:]
 	}
-	slog.Info("completion", "text", text, "symbol", symbolName, "prefix", prefix)
+
+	slog.Info("completion", "text", text, "symbol", symbolName, "prefixes", prefixes)
 
 	items := []protocol.CompletionItem{}
 	matchName := func(name string) func(gno.Symbol) bool {
@@ -55,6 +55,11 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 		case "var":
 			// find referrence type
 			if j := slices.IndexFunc(h.symbols, matchName(sym.Ref)); j != -1 {
+				var prefix string
+				if len(prefixes) > 0 {
+					prefix = prefixes[0]
+					prefixes = prefixes[1:]
+				}
 				for _, f := range h.symbols[j].Fields {
 					if prefix != "" && !strings.HasPrefix(f.Name, prefix) {
 						// skip symbols that doesn't match the prefix

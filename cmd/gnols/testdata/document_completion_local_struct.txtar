@@ -4,12 +4,16 @@ lsp initialized input/initialized.json
 lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 lsp textDocument/didOpen input/didOpen_x.json
 lsp textDocument/didOpen input/didOpen_y.json
+lsp textDocument/didOpen input/didOpen_z.json
 
 lsp textDocument/completion input/completion_x.json
 cmpenv output/completion_x.json expected/completion_x.json
 
 lsp textDocument/completion input/completion_y.json
 cmpenv output/completion_y.json expected/completion_y.json
+
+lsp textDocument/completion input/completion_z.json
+cmpenv output/completion_z.json expected/completion_z.json
 -- x.gno --
 package foo
 
@@ -37,6 +41,13 @@ package foo
 func init() {
 	x := MyType{}
 	x.Ba // completion here, should return only fields of MyType that match 'Ba'
+}
+-- z.gno --
+package foo
+
+func init() {
+	x := MyType{}
+	x.Other. // completion here, should return only fields of Other
 }
 -- input/initialize.json --
 {
@@ -66,6 +77,13 @@ func init() {
 	"textDocument": {
 		"uri":"file://$WORK/y.gno",
 		"text":"${FILE_y.gno}"
+	}
+}
+-- input/didOpen_z.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/z.gno",
+		"text":"${FILE_z.gno}"
 	}
 }
 -- input/completion_x.json --
@@ -127,5 +145,24 @@ func init() {
     "insertText": "Baz",
     "kind": 5,
     "label": "Baz"
+  }
+]
+-- input/completion_z.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/z.gno"
+	},
+	"position": {
+		"character": 9,
+		"line": 4 
+	}
+}
+-- expected/completion_z.json --
+[
+  {
+    "detail": "X string",
+    "insertText": "X",
+    "kind": 5,
+    "label": "X"
   }
 ]
