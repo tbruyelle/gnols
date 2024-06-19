@@ -41,25 +41,17 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	slog.Info("completion", "text", text, "symbol", symbolName, "selectors", selectors)
 
 	items := []protocol.CompletionItem{}
-	// TODO call lookupSymbols directly ?
-	for _, sym := range h.symbols {
-		if sym.Name != symbolName {
-			continue
-		}
-		switch sym.Kind {
-		case "var":
-			syms := h.lookupSymbols(sym.Type, selectors)
-			for _, f := range syms {
-				items = append(items, protocol.CompletionItem{
-					Label:         f.Name,
-					InsertText:    f.Name,
-					Kind:          symbolToKind(f.Kind),
-					Detail:        f.Signature,
-					Documentation: f.Doc,
-				})
-			}
-		}
+	syms := h.lookupSymbols(symbolName, selectors)
+	for _, f := range syms {
+		items = append(items, protocol.CompletionItem{
+			Label:         f.Name,
+			InsertText:    f.Name,
+			Kind:          symbolToKind(f.Kind),
+			Detail:        f.Signature,
+			Documentation: f.Doc,
+		})
 	}
+	// TODO stop of len(items)>0?
 
 	if pkg := lookupPkg(stdlib.Packages, symbolName); pkg != nil {
 		for _, s := range pkg.Symbols {
@@ -68,8 +60,9 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 				continue
 			}
 			if len(selectors) > 0 && !strings.HasPrefix(s.Name, selectors[0]) {
-				// TODO handle multiple selectors (possible if for example a global var
-				// is defined in the pkg, and the user is referrencing it.)
+				// TODO handle multiple selectors? (possible if for example a global
+				// var is defined in the pkg, and the user is referrencing it.)
+
 				// skip symbols that doesn't match the prefix
 				continue
 			}
@@ -92,23 +85,30 @@ func (h handler) lookupSymbols(name string, selectors []string) []gno.Symbol {
 			continue
 		}
 		// we found a symbol matching name
-		if len(selectors) == 0 {
-			// no other selectors, return symbol fields
-			return sym.Fields
-		}
-		// Check if a field is matched
-		var symbols []gno.Symbol
-		for _, f := range sym.Fields {
-			if f.Name == selectors[0] {
-				// field matches selector exactly, lookup in field type fields.
-				return h.lookupSymbols(f.Type, selectors[1:])
+		switch sym.Kind {
+		case "var":
+			// sym is a variable, lookup for symbols matching type
+			return h.lookupSymbols(sym.Type, selectors)
+
+		case "struct":
+			// sym is a struct, lookup for matching fields
+			if len(selectors) == 0 {
+				// no other selectors, return all symbol fields
+				return sym.Fields
 			}
-			if strings.HasPrefix(f.Name, selectors[0]) {
-				// field match partially selector, append
-				symbols = append(symbols, f)
+			var symbols []gno.Symbol
+			for _, f := range sym.Fields {
+				if f.Name == selectors[0] {
+					// field matches selector exactly, lookup in field type fields.
+					return h.lookupSymbols(f.Type, selectors[1:])
+				}
+				if strings.HasPrefix(f.Name, selectors[0]) {
+					// field match partially selector, append
+					symbols = append(symbols, f)
+				}
 			}
+			return symbols
 		}
-		return symbols
 	}
 	return nil
 }
