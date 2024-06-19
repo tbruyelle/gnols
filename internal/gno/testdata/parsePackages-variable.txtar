@@ -8,6 +8,11 @@ type MyType struct {
 	// A is a
 	A int
 	B string
+	C OtherType
+}
+
+type OtherType struct {
+	X int
 }
 
 func Hello() {
@@ -25,12 +30,33 @@ func Hello() {
         "Name": "A",
         "Doc": "A is a",
         "Signature": "A int",
-        "Kind": "field"
+        "Kind": "field",
+        "Type": "int"
       },
       {
         "Name": "B",
         "Signature": "B string",
-        "Kind": "field"
+        "Kind": "field",
+        "Type": "string"
+      },
+      {
+        "Name": "C",
+        "Signature": "C OtherType",
+        "Kind": "field",
+        "Type": "OtherType"
+      }
+    ]
+  },
+  {
+    "Name": "OtherType",
+    "Signature": "OtherType struct",
+    "Kind": "struct",
+    "Fields": [
+      {
+        "Name": "X",
+        "Signature": "X int",
+        "Kind": "field",
+        "Type": "int"
       }
     ]
   },
@@ -43,6 +69,6 @@ func Hello() {
     "Name": "x",
     "Signature": "x := MyType{}",
     "Kind": "var",
-    "Ref": "MyType"
+    "Type": "MyType"
   }
 ]

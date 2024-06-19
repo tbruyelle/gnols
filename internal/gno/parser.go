@@ -23,7 +23,7 @@ type Symbol struct {
 	Kind      string
 	Recv      string   `json:",omitempty"`
 	Fields    []Symbol `json:",omitempty"`
-	Ref       string   `json:",omitempty"`
+	Type      string   `json:",omitempty"`
 }
 
 // func (s Symbol) String() string {
@@ -176,11 +176,16 @@ func declaration(n *ast.GenDecl, source string) []Symbol {
 			if st, ok := t.Type.(*ast.StructType); ok {
 				// Register struct's fields.
 				for _, f := range st.Fields.List {
+					var typ string
+					if id, ok := f.Type.(*ast.Ident); ok {
+						typ = id.Name
+					}
 					fields = append(fields, Symbol{
 						Name:      f.Names[0].Name,
 						Doc:       strings.TrimSpace(f.Doc.Text()),
 						Signature: source[f.Pos()-1 : f.End()-1],
 						Kind:      "field",
+						Type:      typ,
 					})
 				}
 			}
@@ -220,17 +225,17 @@ func function(n *ast.FuncDecl, source string) []Symbol {
 }
 
 func variable(n *ast.AssignStmt, source string) []Symbol {
-	var ref string
+	var typ string
 	if cl, ok := n.Rhs[0].(*ast.CompositeLit); ok {
 		if id, ok := cl.Type.(*ast.Ident); ok {
-			ref = id.Name
+			typ = id.Name
 		}
 	}
 	return []Symbol{{
 		Name:      n.Lhs[0].(*ast.Ident).Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
-		Ref:       ref,
+		Type:      typ,
 	}}
 }
 

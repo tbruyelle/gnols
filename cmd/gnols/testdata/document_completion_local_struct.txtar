@@ -24,10 +24,10 @@ type MyType struct {
 	// Bar is bar
 	Bar string
 	// Baz is baz
-	Baz Other
+	Baz OtherType
 }
 
-type Other struct {
+type OtherType struct {
 	X uint64
 }
 
@@ -47,7 +47,7 @@ package foo
 
 func init() {
 	x := MyType{}
-	x.Other. // completion here, should return only fields of Other
+	x.Baz. // completion here, should return only fields of OtherType
 }
 -- input/initialize.json --
 {
@@ -113,7 +113,7 @@ func init() {
     "label": "Bar"
   },
   {
-    "detail": "Baz Other",
+    "detail": "Baz OtherType",
     "documentation": "Baz is baz",
     "insertText": "Baz",
     "kind": 5,
@@ -140,7 +140,7 @@ func init() {
     "label": "Bar"
   },
   {
-    "detail": "Baz Other",
+    "detail": "Baz OtherType",
     "documentation": "Baz is baz",
     "insertText": "Baz",
     "kind": 5,
@@ -153,14 +153,15 @@ func init() {
 		"uri":"file://$WORK/z.gno"
 	},
 	"position": {
-		"character": 9,
+		"character": 4,
 		"line": 4 
 	}
 }
 -- expected/completion_z.json --
 [
   {
-    "detail": "X string",
+    "detail": "X uint64",
+    "documentation": "",
     "insertText": "X",
     "kind": 5,
     "label": "X"

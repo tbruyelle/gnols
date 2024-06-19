@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"log/slog"
-	"slices"
 	"strings"
 
 	"github.com/jdkato/gnols/internal/gno"
@@ -30,49 +29,34 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	text := strings.TrimSpace(token.Text)
 
 	// Extract symbol name and prefix from text
-	// TODO handle multiple dots like Struct.A.B
-	var (
-		symbolName = text
-		prefixes   []string // TODO rename
-	)
 	// TODO ensure textDocument/completion is only triggered after a dot '.' and
 	// if yes why ? Is it a client limitation or configuration, or a LSP spec?
 	ss := strings.Split(text, ".")
-	symbolName = ss[0]
+	symbolName := ss[0]
+	var selectors []string
 	if len(ss) > 1 {
-		prefixes = ss[1:]
+		selectors = ss[1:]
 	}
 
-	slog.Info("completion", "text", text, "symbol", symbolName, "prefixes", prefixes)
+	slog.Info("completion", "text", text, "symbol", symbolName, "selectors", selectors)
 
 	items := []protocol.CompletionItem{}
-	matchName := func(name string) func(gno.Symbol) bool {
-		return func(s gno.Symbol) bool { return s.Name == name }
-	}
-	if i := slices.IndexFunc(h.symbols, matchName(symbolName)); i != -1 {
-		sym := h.symbols[i]
+	// TODO call lookupSymbols directly ?
+	for _, sym := range h.symbols {
+		if sym.Name != symbolName {
+			continue
+		}
 		switch sym.Kind {
 		case "var":
-			// find referrence type
-			if j := slices.IndexFunc(h.symbols, matchName(sym.Ref)); j != -1 {
-				var prefix string
-				if len(prefixes) > 0 {
-					prefix = prefixes[0]
-					prefixes = prefixes[1:]
-				}
-				for _, f := range h.symbols[j].Fields {
-					if prefix != "" && !strings.HasPrefix(f.Name, prefix) {
-						// skip symbols that doesn't match the prefix
-						continue
-					}
-					items = append(items, protocol.CompletionItem{
-						Label:         f.Name,
-						InsertText:    f.Name,
-						Kind:          symbolToKind(f.Kind),
-						Detail:        f.Signature,
-						Documentation: f.Doc,
-					})
-				}
+			syms := h.lookupSymbols(sym.Type, selectors)
+			for _, f := range syms {
+				items = append(items, protocol.CompletionItem{
+					Label:         f.Name,
+					InsertText:    f.Name,
+					Kind:          symbolToKind(f.Kind),
+					Detail:        f.Signature,
+					Documentation: f.Doc,
+				})
 			}
 		}
 	}
@@ -83,7 +67,9 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 				// skip symbols with receiver (methods)
 				continue
 			}
-			if prefix != "" && !strings.HasPrefix(s.Name, prefix) {
+			if len(selectors) > 0 && !strings.HasPrefix(s.Name, selectors[0]) {
+				// TODO handle multiple selectors (possible if for example a global var
+				// is defined in the pkg, and the user is referrencing it.)
 				// skip symbols that doesn't match the prefix
 				continue
 			}
@@ -97,4 +83,32 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 		}
 	}
 	return reply(ctx, items, nil)
+}
+
+func (h handler) lookupSymbols(name string, selectors []string) []gno.Symbol {
+	slog.Info("lookupSymbols", "name", name, "selectors", selectors)
+	for _, sym := range h.symbols {
+		if sym.Name != name {
+			continue
+		}
+		// we found a symbol matching name
+		if len(selectors) == 0 {
+			// no other selectors, return symbol fields
+			return sym.Fields
+		}
+		// Check if a field is matched
+		var symbols []gno.Symbol
+		for _, f := range sym.Fields {
+			if f.Name == selectors[0] {
+				// field matches selector exactly, lookup in field type fields.
+				return h.lookupSymbols(f.Type, selectors[1:])
+			}
+			if strings.HasPrefix(f.Name, selectors[0]) {
+				// field match partially selector, append
+				symbols = append(symbols, f)
+			}
+		}
+		return symbols
+	}
+	return nil
 }
