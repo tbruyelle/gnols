@@ -25,7 +25,7 @@ type OtherType struct {
 
 func Hello() {
 	x := MyType{}
-	x. // completion here, should return all fields of MyType
+	x.Baz. // completion here, should return only fields of OtherType
 }
 -- input/initialize.json --
 {
@@ -56,31 +56,17 @@ func Hello() {
 		"uri":"file://$WORK/x.gno"
 	},
 	"position": {
-		"character": 3,
-		"line": 18
+		"character": 7,
+		"line": 18 
 	}
 }
 -- expected/completion_x.json --
 [
   {
-    "detail": "Foo int",
-    "documentation": "Foo is foo",
-    "insertText": "Foo",
+    "detail": "X uint64",
+    "documentation": "",
+    "insertText": "X",
     "kind": 5,
-    "label": "Foo"
-  },
-  {
-    "detail": "Bar string",
-    "documentation": "Bar is bar",
-    "insertText": "Bar",
-    "kind": 5,
-    "label": "Bar"
-  },
-  {
-    "detail": "Baz OtherType",
-    "documentation": "Baz is baz",
-    "insertText": "Baz",
-    "kind": 5,
-    "label": "Baz"
+    "label": "X"
   }
 ]
