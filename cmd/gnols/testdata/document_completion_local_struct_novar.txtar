@@ -1,0 +1,86 @@
+skip # for now and maybe forever
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+lsp textDocument/completion input/completion_x.json
+cmpenv output/completion_x.json expected/completion_x.json
+-- x.gno --
+package foo
+
+// MyType is my type
+type MyType struct {
+	// Foo is foo
+	Foo int
+	// Bar is bar
+	Bar string
+	// Baz is baz
+	Baz OtherType
+}
+
+type OtherType struct {
+	X uint64
+}
+
+func Hello() {
+	MyType{}. // completion here, should return all fields of MyType
+}
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "$GOBIN/gno",
+		"gopls":            "$GOBIN/gopls",
+		"root":             "$GNOPATH",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
+	}
+}
+-- input/completion_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"character": 6,
+		"line": 17
+	}
+}
+-- expected/completion_x.json --
+[
+  {
+    "detail": "Foo int",
+    "documentation": "Foo is foo",
+    "insertText": "Foo",
+    "kind": 5,
+    "label": "Foo"
+  },
+  {
+    "detail": "Bar string",
+    "documentation": "Bar is bar",
+    "insertText": "Bar",
+    "kind": 5,
+    "label": "Bar"
+  },
+  {
+    "detail": "Baz OtherType",
+    "documentation": "Baz is baz",
+    "insertText": "Baz",
+    "kind": 5,
+    "label": "Baz"
+  }
+]
