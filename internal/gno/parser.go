@@ -1,7 +1,6 @@
 package gno
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -24,6 +23,7 @@ type Symbol struct {
 	Recv      string   `json:",omitempty"`
 	Fields    []Symbol `json:",omitempty"`
 	Type      string   `json:",omitempty"`
+	PkgPath   string   `json:",omitempty"`
 }
 
 // func (s Symbol) String() string {
@@ -37,7 +37,7 @@ func ParsePackage(dir, importPath string) (*Package, error) {
 		return nil, err
 	}
 	for _, file := range files {
-		syms, err := getSymbols(file)
+		syms, err := getSymbols(dir, file)
 		if err != nil {
 			return nil, err
 		}
@@ -110,16 +110,13 @@ func getFiles(path string) ([]string, error) {
 		if ext != ".gno" {
 			return nil
 		}
-		if filepath.Dir(file) != path {
-			return nil
-		}
 		files = append(files, file)
 		return nil
 	})
 	return files, err
 }
 
-func getSymbols(filename string) ([]Symbol, error) {
+func getSymbols(dir string, filename string) ([]Symbol, error) {
 	var symbols []Symbol
 
 	// Create a FileSet to work with.
@@ -128,7 +125,7 @@ func getSymbols(filename string) ([]Symbol, error) {
 	// Parse the file and create an AST.
 	file, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
-		fmt.Println("PARSEFILE", err)
+		// fmt.Println("PARSEFILE", err)
 	}
 
 	bsrc, err := os.ReadFile(filename)
@@ -143,7 +140,7 @@ func getSymbols(filename string) ([]Symbol, error) {
 	ast.Inspect(file, func(n ast.Node) bool {
 		var found []Symbol
 
-		// fmt.Println("NODE", spew.Sdump(n))
+		// fmt.Println("NODE", filename, spew.Sdump(n))
 		switch n := n.(type) {
 		case *ast.FuncDecl:
 			found = function(n, text)
@@ -152,13 +149,20 @@ func getSymbols(filename string) ([]Symbol, error) {
 		case *ast.AssignStmt:
 			if n.Tok == token.DEFINE {
 				// new variable declaration with :=
-				found = variable(n, text)
+				found = assignment(n, text)
 			}
 		case *ast.ValueSpec:
-			// TODO handle var ( x = XXX )
+			found = variable(n, text)
 		}
 
 		if found != nil {
+			rel, err := filepath.Rel(dir, filename)
+			if err == nil {
+				pkgPath := filepath.Dir(rel)
+				for i := range found {
+					found[i].PkgPath = pkgPath
+				}
+			}
 			symbols = append(symbols, found...)
 		}
 
@@ -224,7 +228,7 @@ func function(n *ast.FuncDecl, source string) []Symbol {
 	}}
 }
 
-func variable(n *ast.AssignStmt, source string) []Symbol {
+func assignment(n *ast.AssignStmt, source string) []Symbol {
 	var typ string
 	if cl, ok := n.Rhs[0].(*ast.CompositeLit); ok {
 		if id, ok := cl.Type.(*ast.Ident); ok {
@@ -233,6 +237,19 @@ func variable(n *ast.AssignStmt, source string) []Symbol {
 	}
 	return []Symbol{{
 		Name:      n.Lhs[0].(*ast.Ident).Name,
+		Signature: source[n.Pos()-1 : n.End()-1],
+		Kind:      "var",
+		Type:      typ,
+	}}
+}
+
+func variable(n *ast.ValueSpec, source string) []Symbol {
+	var typ string
+	if id, ok := n.Type.(*ast.Ident); ok {
+		typ = id.Name
+	}
+	return []Symbol{{
+		Name:      n.Names[0].Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
 		Type:      typ,

@@ -15,6 +15,8 @@ type OtherType struct {
 	X int
 }
 
+var Z string
+
 func Hello() {
 	x := MyType{}
 }
@@ -45,7 +47,8 @@ func Hello() {
         "Kind": "field",
         "Type": "OtherType"
       }
-    ]
+    ],
+    "PkgPath": "."
   },
   {
     "Name": "OtherType",
@@ -58,17 +61,27 @@ func Hello() {
         "Kind": "field",
         "Type": "int"
       }
-    ]
+    ],
+    "PkgPath": "."
+  },
+  {
+    "Name": "Z",
+    "Signature": "Z string",
+    "Kind": "var",
+    "Type": "string",
+    "PkgPath": "."
   },
   {
     "Name": "Hello",
     "Signature": "func Hello()",
-    "Kind": "func"
+    "Kind": "func",
+    "PkgPath": "."
   },
   {
     "Name": "x",
     "Signature": "x := MyType{}",
     "Kind": "var",
-    "Type": "MyType"
+    "Type": "MyType",
+    "PkgPath": "."
   }
 ]

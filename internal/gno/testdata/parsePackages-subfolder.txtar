@@ -1,0 +1,34 @@
+printSymbols
+cmp stdout expected.json
+-- x.gno --
+package foo
+
+func Hello() {}
+-- sub/y.gno --
+package sub
+
+type X struct{}
+
+var Y int
+-- expected.json --
+[
+  {
+    "Name": "X",
+    "Signature": "X struct{}",
+    "Kind": "struct",
+    "PkgPath": "sub"
+  },
+  {
+    "Name": "Y",
+    "Signature": "Y int",
+    "Kind": "var",
+    "Type": "int",
+    "PkgPath": "sub"
+  },
+  {
+    "Name": "Hello",
+    "Signature": "func Hello()",
+    "Kind": "func",
+    "PkgPath": "."
+  }
+]
