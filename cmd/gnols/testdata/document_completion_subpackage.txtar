@@ -1,0 +1,70 @@
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+lsp textDocument/completion input/completion.json
+cmpenv output/completion.json expected/completion.json
+-- x.gno --
+package foo
+
+func Hello() {
+	sub.
+}
+-- sub/y.gno --
+package sub
+
+var X int
+
+type SubStruct {}
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "$GOBIN/gno",
+		"gopls":            "$GOBIN/gopls",
+		"root":             "$GNOPATH",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
+	}
+}
+-- input/completion.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"character": 4,
+		"line": 3
+	}
+}
+-- expected/completion.json --
+[
+  {
+    "detail": "X int",
+    "documentation": "",
+    "insertText": "X",
+    "kind": 6,
+    "label": "X"
+  },
+  {
+    "detail": "SubStruct",
+    "documentation": "",
+    "insertText": "SubStruct",
+    "kind": 7,
+    "label": "SubStruct"
+  }
+]

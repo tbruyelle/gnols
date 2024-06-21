@@ -81,33 +81,44 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 func (h handler) lookupSymbols(name string, selectors []string) []gno.Symbol {
 	slog.Info("lookupSymbols", "name", name, "selectors", selectors)
 	for _, sym := range h.symbols {
-		if sym.Name != name {
-			continue
-		}
-		// we found a symbol matching name
-		switch sym.Kind {
-		case "var":
-			// sym is a variable, lookup for symbols matching type
-			return h.lookupSymbols(sym.Type, selectors)
+		switch {
 
-		case "struct":
-			// sym is a struct, lookup for matching fields
-			if len(selectors) == 0 {
-				// no other selectors, return all symbol fields
-				return sym.Fields
-			}
-			var symbols []gno.Symbol
-			for _, f := range sym.Fields {
-				if f.Name == selectors[0] {
-					// field matches selector exactly, lookup in field type fields.
-					return h.lookupSymbols(f.Type, selectors[1:])
+		case sym.Name == name:
+			// we found a symbol matching name
+			switch sym.Kind {
+			case "var":
+				// sym is a variable, lookup for symbols matching type
+				return h.lookupSymbols(sym.Type, selectors)
+
+			case "struct":
+				// sym is a struct, lookup for matching fields
+				if len(selectors) == 0 {
+					// no other selectors, return all symbol fields
+					return sym.Fields
 				}
-				if strings.HasPrefix(f.Name, selectors[0]) {
-					// field match partially selector, append
-					symbols = append(symbols, f)
+				var symbols []gno.Symbol
+				for _, f := range sym.Fields {
+					if f.Name == selectors[0] {
+						// field matches selector exactly, lookup in field type fields.
+						return h.lookupSymbols(f.Type, selectors[1:])
+					}
+					if strings.HasPrefix(f.Name, selectors[0]) {
+						// field match partially selector, append
+						symbols = append(symbols, f)
+					}
+				}
+				return symbols
+			}
+
+		case sym.PkgPath == name:
+			// match a sub package, return all symbols from that package
+			var syms []gno.Symbol
+			for _, sym := range h.symbols {
+				if sym.PkgPath == name {
+					syms = append(syms, sym)
 				}
 			}
-			return symbols
+			return syms
 		}
 	}
 	return nil
