@@ -73,6 +73,10 @@ func (d *Document) TokenAt(pos protocol.Position) (*HoveredToken, error) {
 	context := d.Lines[pos.Line]
 	index := pos.Character
 
+	if len(context) <= int(index) {
+		return &HoveredToken{}, errors.New("character out of range")
+	}
+
 	start := index
 	for start > 0 && context[start-1] != ' ' {
 		start--
