@@ -14,7 +14,11 @@ release:
 
 deps:
 	go install golang.org/x/tools/gopls@v0.15.3
-	go install github.com/gnolang/gno/gnovm/cmd/gno@latest
+	# can't use @latest or @master because that fetches a nightly build where
+	# the `gno transpile -gobuild .` fails because there's no go.mod in the repo.
+	# This shouldn't be the case as long as a list of files is given to the
+	# `go build` command rather than a path.
+	go install github.com/gnolang/gno/gnovm/cmd/gno@6ec4bb80
 
 build:
 	GOOS=$(os) GOARCH=$(arch) go build ${LDFLAGS} -o bin/$(exe) ./cmd/gnols
