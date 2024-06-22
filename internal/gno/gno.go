@@ -126,7 +126,7 @@ func (m *BinManager) Transpile() ([]byte, error) {
 	}
 	bz, err := exec.Command(m.gno, args...).CombinedOutput() //nolint:gosec
 	if err != nil {
-		return bz, fmt.Errorf("running '%s %s': %w", m.gno, strings.Join(args, " "), err)
+		return bz, fmt.Errorf("running '%s %s': %w: %s", m.gno, strings.Join(args, " "), err, string(bz))
 	}
 	return bz, nil
 }
