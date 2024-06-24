@@ -10,8 +10,27 @@ package sub
 type X struct{}
 
 var Y int
+-- sub/sub2/y.gno --
+package sub
+
+type X struct{}
+
+var Y int
 -- expected.json --
 [
+  {
+    "Name": "X",
+    "Signature": "X struct{}",
+    "Kind": "struct",
+    "PkgPath": "sub/sub2"
+  },
+  {
+    "Name": "Y",
+    "Signature": "Y int",
+    "Kind": "var",
+    "Type": "int",
+    "PkgPath": "sub/sub2"
+  },
   {
     "Name": "X",
     "Signature": "X struct{}",
