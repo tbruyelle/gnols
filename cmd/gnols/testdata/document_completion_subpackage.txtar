@@ -17,6 +17,8 @@ package sub
 
 var X int
 
+func Bye() {}
+
 type SubStruct {}
 -- input/initialize.json --
 {
@@ -59,6 +61,13 @@ type SubStruct {}
     "insertText": "X",
     "kind": 6,
     "label": "X"
+  },
+  {
+    "detail": "func Bye()",
+    "documentation": "",
+    "insertText": "Bye",
+    "kind": 3,
+    "label": "Bye"
   },
   {
     "detail": "SubStruct",
