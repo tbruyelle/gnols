@@ -7,13 +7,15 @@ var X struct {
 	// A is a
 	A int
 	B string
-	C OtherType
+	C struct {
+		X uint64
+	}
 }{}
 -- expected.json --
 [
   {
     "Name": "X",
-    "Signature": "X struct {\n\t// A is a\n\tA int\n\tB string\n\tC OtherType\n}",
+    "Signature": "X struct {\n\t// A is a\n\tA int\n\tB string\n\tC struct {\n\t\tX uint64\n\t}\n}",
     "Kind": "var",
     "Fields": [
       {
@@ -31,12 +33,18 @@ var X struct {
       },
       {
         "Name": "C",
-        "Signature": "C OtherType",
+        "Signature": "C struct {\n\t\tX uint64\n\t}",
         "Kind": "field",
-        "Type": "OtherType"
+        "Fields": [
+          {
+            "Name": "X",
+            "Signature": "X uint64",
+            "Kind": "field",
+            "Type": "uint64"
+          }
+        ]
       }
     ],
-    "Type": "struct",
     "PkgPath": "."
   }
 ]

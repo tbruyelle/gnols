@@ -31,7 +31,7 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	// Extract symbol name and prefix from text
 	// TODO ensure textDocument/completion is only triggered after a dot '.' and
 	// if yes why ? Is it a client limitation or configuration, or a LSP spec?
-	ss := strings.Split(text, ".")
+	ss := strings.FieldsFunc(text, func(r rune) bool { return r == '.' })
 	symbolName := ss[0]
 	var selectors []string
 	if len(ss) > 1 {
@@ -78,51 +78,65 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	return reply(ctx, items, nil)
 }
 
+// TODO merge name and selectors?
 func (h handler) lookupSymbols(name string, selectors []string) []gno.Symbol {
-	slog.Info("lookupSymbols", "name", name, "selectors", selectors)
-	for _, sym := range h.symbols {
+	return lookupSymbols(h.symbols, name, selectors)
+}
+
+func lookupSymbols(symbols []gno.Symbol, name string, selectors []string) []gno.Symbol {
+	for _, sym := range symbols {
 		switch {
 
 		case sym.Name == name:
+			slog.Info("found symbol", "name", name, "kind", sym.Kind, "selectors", selectors)
 			// we found a symbol matching name
 			switch sym.Kind {
 			case "var":
-				if sym.Type == "struct" {
+				if sym.Type == "" {
 					// sym is an inline struct, returns fields
 					return sym.Fields
 				}
 				// sym is a variable, lookup for symbols matching type
-				return h.lookupSymbols(sym.Type, selectors)
+				return lookupSymbols(symbols, sym.Type, selectors)
 
 			case "struct":
 				// sym is a struct, lookup for matching fields
 				if len(selectors) == 0 {
 					// no other selectors, return all symbol fields
+					// TODO handle remaining selectors if any
 					return sym.Fields
 				}
-				var symbols []gno.Symbol
+				var syms []gno.Symbol
 				for _, f := range sym.Fields {
 					if f.Name == selectors[0] {
+						if f.Type == "" {
+							// sym is an inline struct, returns fields
+							return f.Fields
+						}
 						// field matches selector exactly, lookup in field type fields.
-						return h.lookupSymbols(f.Type, selectors[1:])
+						return lookupSymbols(symbols, f.Type, selectors[1:])
 					}
 					if strings.HasPrefix(f.Name, selectors[0]) {
 						// field match partially selector, append
-						symbols = append(symbols, f)
+						syms = append(syms, f)
 					}
 				}
-				return symbols
+				return syms
 			}
 
 		case sym.PkgPath == name:
-			// match a sub package, return all symbols from that package
+			slog.Info("found package", "name", name, "selectors", selectors)
+			// match a sub package, lookup symbols from that package
 			var syms []gno.Symbol
-			for _, sym := range h.symbols {
+			for _, sym := range symbols {
 				if sym.PkgPath == name {
 					syms = append(syms, sym)
 				}
 			}
-			return syms
+			if len(selectors) == 0 {
+				return syms
+			}
+			return lookupSymbols(syms, selectors[0], selectors[1:])
 		}
 	}
 	return nil

@@ -172,16 +172,13 @@ func declaration(n *ast.GenDecl, source string) []Symbol {
 	for _, spec := range n.Specs {
 		switch t := spec.(type) { //nolint:gocritic
 		case *ast.TypeSpec:
-			var fields []Symbol
-			if st, ok := t.Type.(*ast.StructType); ok {
-				// Register struct's fields.
-				fields = structFields(st, source)
-			}
+			typ, fields := typeFromExpr(t.Type, source)
 			return []Symbol{{
 				Name:      t.Name.Name,
 				Doc:       strings.TrimSpace(n.Doc.Text()),
 				Signature: strings.Split(source[t.Pos()-1:t.End()-1], " {")[0],
 				Kind:      typeName(*t),
+				Type:      typ,
 				Fields:    fields,
 			}}
 		}
@@ -193,12 +190,7 @@ func declaration(n *ast.GenDecl, source string) []Symbol {
 func function(n *ast.FuncDecl, source string) []Symbol {
 	var recv string
 	if n.Recv != nil {
-		switch x := n.Recv.List[0].Type.(type) {
-		case *ast.StarExpr:
-			recv = x.X.(*ast.Ident).Name
-		case *ast.Ident:
-			recv = x.Name
-		}
+		recv, _ = typeFromExpr(n.Recv.List[0].Type, source)
 		if !ast.IsExported(recv) {
 			return nil
 		}
@@ -213,34 +205,9 @@ func function(n *ast.FuncDecl, source string) []Symbol {
 }
 
 func assignment(n *ast.AssignStmt, source string) []Symbol {
-	var typ string
-	if cl, ok := n.Rhs[0].(*ast.CompositeLit); ok {
-		if id, ok := cl.Type.(*ast.Ident); ok {
-			typ = id.Name
-		}
-	}
+	typ, fields := typeFromExpr(n.Rhs[0], source)
 	return []Symbol{{
 		Name:      n.Lhs[0].(*ast.Ident).Name,
-		Signature: source[n.Pos()-1 : n.End()-1],
-		Kind:      "var",
-		Type:      typ,
-	}}
-}
-
-func variable(n *ast.ValueSpec, source string) []Symbol {
-	var (
-		typ    string
-		fields []Symbol
-	)
-	switch x := n.Type.(type) {
-	case *ast.Ident:
-		typ = x.Name
-	case *ast.StructType: // inline struct
-		typ = "struct"
-		fields = structFields(x, source)
-	}
-	return []Symbol{{
-		Name:      n.Names[0].Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
 		Type:      typ,
@@ -248,21 +215,45 @@ func variable(n *ast.ValueSpec, source string) []Symbol {
 	}}
 }
 
-func structFields(st *ast.StructType, source string) (fields []Symbol) {
+func variable(n *ast.ValueSpec, source string) []Symbol {
+	typ, fields := typeFromExpr(n.Type, source)
+	return []Symbol{{
+		Name:      n.Names[0].Name,
+		Doc:       strings.TrimSpace(n.Doc.Text()),
+		Signature: source[n.Pos()-1 : n.End()-1],
+		Kind:      "var",
+		Type:      typ,
+		Fields:    fields,
+	}}
+}
+
+func fieldsFromStruct(st *ast.StructType, source string) (fields []Symbol) {
 	for _, f := range st.Fields.List {
-		var typ string
-		if id, ok := f.Type.(*ast.Ident); ok {
-			typ = id.Name
-		}
+		typ, subfields := typeFromExpr(f.Type, source)
 		fields = append(fields, Symbol{
 			Name:      f.Names[0].Name,
 			Doc:       strings.TrimSpace(f.Doc.Text()),
 			Signature: source[f.Pos()-1 : f.End()-1],
 			Kind:      "field",
 			Type:      typ,
+			Fields:    subfields,
 		})
 	}
 	return
+}
+
+func typeFromExpr(x ast.Expr, source string) (string, []Symbol) {
+	switch x := x.(type) {
+	case *ast.Ident:
+		return x.Name, nil
+	case *ast.CompositeLit:
+		return typeFromExpr(x.Type, source)
+	case *ast.UnaryExpr:
+		return typeFromExpr(x.X, source)
+	case *ast.StructType: // inline struct
+		return "", fieldsFromStruct(x, source)
+	}
+	return "", nil
 }
 
 func typeName(t ast.TypeSpec) string {

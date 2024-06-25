@@ -19,6 +19,7 @@ var Z string
 
 func Hello() {
 	x := MyType{}
+	y := &MyType{}
 }
 -- expected.json --
 [
@@ -80,6 +81,13 @@ func Hello() {
   {
     "Name": "x",
     "Signature": "x := MyType{}",
+    "Kind": "var",
+    "Type": "MyType",
+    "PkgPath": "."
+  },
+  {
+    "Name": "y",
+    "Signature": "y := \u0026MyType{}",
     "Kind": "var",
     "Type": "MyType",
     "PkgPath": "."
