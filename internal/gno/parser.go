@@ -26,10 +26,6 @@ type Symbol struct {
 	PkgPath   string   `json:",omitempty"`
 }
 
-// func (s Symbol) String() string {
-// return fmt.Sprintf("```go\n%s\n```\n\n%s", s.Signature, s.Doc)
-// }
-
 func ParsePackage(dir, importPath string) (*Package, error) {
 	symbols := []Symbol{}
 	files, err := getFiles(dir)
@@ -179,19 +175,7 @@ func declaration(n *ast.GenDecl, source string) []Symbol {
 			var fields []Symbol
 			if st, ok := t.Type.(*ast.StructType); ok {
 				// Register struct's fields.
-				for _, f := range st.Fields.List {
-					var typ string
-					if id, ok := f.Type.(*ast.Ident); ok {
-						typ = id.Name
-					}
-					fields = append(fields, Symbol{
-						Name:      f.Names[0].Name,
-						Doc:       strings.TrimSpace(f.Doc.Text()),
-						Signature: source[f.Pos()-1 : f.End()-1],
-						Kind:      "field",
-						Type:      typ,
-					})
-				}
+				fields = structFields(st, source)
 			}
 			return []Symbol{{
 				Name:      t.Name.Name,
@@ -244,16 +228,41 @@ func assignment(n *ast.AssignStmt, source string) []Symbol {
 }
 
 func variable(n *ast.ValueSpec, source string) []Symbol {
-	var typ string
-	if id, ok := n.Type.(*ast.Ident); ok {
-		typ = id.Name
+	var (
+		typ    string
+		fields []Symbol
+	)
+	switch x := n.Type.(type) {
+	case *ast.Ident:
+		typ = x.Name
+	case *ast.StructType: // inline struct
+		typ = "struct"
+		fields = structFields(x, source)
 	}
 	return []Symbol{{
 		Name:      n.Names[0].Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
 		Type:      typ,
+		Fields:    fields,
 	}}
+}
+
+func structFields(st *ast.StructType, source string) (fields []Symbol) {
+	for _, f := range st.Fields.List {
+		var typ string
+		if id, ok := f.Type.(*ast.Ident); ok {
+			typ = id.Name
+		}
+		fields = append(fields, Symbol{
+			Name:      f.Names[0].Name,
+			Doc:       strings.TrimSpace(f.Doc.Text()),
+			Signature: source[f.Pos()-1 : f.End()-1],
+			Kind:      "field",
+			Type:      typ,
+		})
+	}
+	return
 }
 
 func typeName(t ast.TypeSpec) string {

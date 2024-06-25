@@ -87,6 +87,10 @@ func (h handler) lookupSymbols(name string, selectors []string) []gno.Symbol {
 			// we found a symbol matching name
 			switch sym.Kind {
 			case "var":
+				if sym.Type == "struct" {
+					// sym is an inline struct, returns fields
+					return sym.Fields
+				}
 				// sym is a variable, lookup for symbols matching type
 				return h.lookupSymbols(sym.Type, selectors)
 

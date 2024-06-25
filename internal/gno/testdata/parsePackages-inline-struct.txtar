@@ -1,0 +1,42 @@
+printSymbols
+cmp stdout expected.json
+-- x.gno --
+package foo
+
+var X struct {
+	// A is a
+	A int
+	B string
+	C OtherType
+}{}
+-- expected.json --
+[
+  {
+    "Name": "X",
+    "Signature": "X struct {\n\t// A is a\n\tA int\n\tB string\n\tC OtherType\n}",
+    "Kind": "var",
+    "Fields": [
+      {
+        "Name": "A",
+        "Doc": "A is a",
+        "Signature": "A int",
+        "Kind": "field",
+        "Type": "int"
+      },
+      {
+        "Name": "B",
+        "Signature": "B string",
+        "Kind": "field",
+        "Type": "string"
+      },
+      {
+        "Name": "C",
+        "Signature": "C OtherType",
+        "Kind": "field",
+        "Type": "OtherType"
+      }
+    ],
+    "Type": "struct",
+    "PkgPath": "."
+  }
+]
