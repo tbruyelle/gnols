@@ -24,13 +24,8 @@ linters-settings:
         skipRecvDeref: false
 
   govet:
-    enable-all: true
     disable:
       - fieldalignment
-
-    settings:
-      shadow:
-        strict: false
 
   nakedret:
     max-func-lines: 0
