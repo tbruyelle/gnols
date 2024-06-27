@@ -131,7 +131,7 @@ func call(ts *testscript.TestScript, method string, paramFile string) {
 	)
 	_, err := conn.Call(context.Background(), method, params, &response)
 	if err != nil {
-		if jerr, ok := err.(*jsonrpc2.Error); ok {
+		if jerr, ok := err.(*jsonrpc2.Error); ok { //nolint:errorlint
 			// output jsonrpc2.Error in json
 			response = map[string]any{"error": jerr}
 		} else {

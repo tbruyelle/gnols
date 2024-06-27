@@ -86,7 +86,6 @@ func (h handler) lookupSymbols(name string, selectors []string) []gno.Symbol {
 func lookupSymbols(symbols []gno.Symbol, name string, selectors []string) []gno.Symbol {
 	for _, sym := range symbols {
 		switch {
-
 		case sym.Name == name:
 			slog.Info("found symbol", "name", name, "kind", sym.Kind, "selectors", selectors)
 			// we found a symbol matching name

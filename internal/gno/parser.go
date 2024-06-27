@@ -41,7 +41,7 @@ func ParsePackage(dir, importPath string) (*Package, error) {
 	}
 	if len(symbols) == 0 {
 		// Ignore directories w/o symbols
-		return nil, nil
+		return nil, nil //nolint:nilnil
 	}
 
 	return &Package{
@@ -119,10 +119,8 @@ func getSymbols(dir string, filename string) ([]Symbol, error) {
 	fset := token.NewFileSet()
 
 	// Parse the file and create an AST.
-	file, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
-	if err != nil {
-		// fmt.Println("PARSEFILE", err)
-	}
+	file, _ := parser.ParseFile(fset, filename, nil, parser.ParseComments)
+	// fmt.Println("PARSEFILE", err)
 
 	bsrc, err := os.ReadFile(filename)
 	if err != nil {
