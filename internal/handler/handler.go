@@ -165,7 +165,7 @@ func (h *handler) notifyErr(ctx context.Context, err error) {
 }
 
 func (h *handler) updateSymbols() error {
-	pkg, err := gno.ParsePackage(h.workspaceFolder, "")
+	pkg, err := gno.ParsePackage(h.workspaceFolder, h.workspaceFolder, "")
 	if err != nil {
 		return fmt.Errorf("updateSymbols: %w", err)
 	}

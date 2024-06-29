@@ -26,14 +26,14 @@ type Symbol struct {
 	PkgPath   string   `json:",omitempty"`
 }
 
-func ParsePackage(dir, importPath string) (*Package, error) {
+func ParsePackage(wd, dir, importPath string) (*Package, error) {
 	symbols := []Symbol{}
 	files, err := getFiles(dir)
 	if err != nil {
 		return nil, err
 	}
 	for _, file := range files {
-		syms, err := getSymbols(dir, file)
+		syms, err := getSymbols(wd, dir, file)
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +51,9 @@ func ParsePackage(dir, importPath string) (*Package, error) {
 	}, nil
 }
 
-func ParsePackages(dir string) ([]Package, error) {
+// FIXME since getFiles returns subfolders now, this function is useless and
+// returns duplicates
+func ParsePackages(wd, dir string) ([]Package, error) {
 	var pkgs []Package
 	dirs, err := getDirs(dir)
 	if err != nil {
@@ -64,7 +66,7 @@ func ParsePackages(dir string) ([]Package, error) {
 			strings.TrimPrefix(d, dir+string(filepath.Separator)),
 			string(filepath.Separator), "/",
 		)
-		pkg, err := ParsePackage(d, ip)
+		pkg, err := ParsePackage(wd, d, ip)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +114,7 @@ func getFiles(path string) ([]string, error) {
 	return files, err
 }
 
-func getSymbols(dir string, filename string) ([]Symbol, error) {
+func getSymbols(wd, dir string, filename string) ([]Symbol, error) {
 	var symbols []Symbol
 
 	// Create a FileSet to work with.
@@ -128,8 +130,10 @@ func getSymbols(dir string, filename string) ([]Symbol, error) {
 	}
 	text := string(bsrc)
 
-	// Trim AST to exported declarations only.
-	ast.FileExports(file)
+	if wd != filepath.Dir(filename) {
+		// Trim AST to exported declarations only if not in working dir
+		ast.FileExports(file)
+	}
 
 	ast.Inspect(file, func(n ast.Node) bool {
 		var found []Symbol

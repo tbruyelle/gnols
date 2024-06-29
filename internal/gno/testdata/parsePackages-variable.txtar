@@ -9,6 +9,7 @@ type MyType struct {
 	A int
 	B string
 	C OtherType
+	d int
 }
 
 type OtherType struct {
@@ -47,6 +48,12 @@ func Hello() {
         "Signature": "C OtherType",
         "Kind": "field",
         "Type": "OtherType"
+      },
+      {
+        "Name": "d",
+        "Signature": "d int",
+        "Kind": "field",
+        "Type": "int"
       }
     ],
     "PkgPath": "."

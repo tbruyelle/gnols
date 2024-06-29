@@ -15,8 +15,8 @@ type MyType struct {
 	Foo int
 	// Bar is bar
 	Bar string
-	// Baz is baz
-	Baz OtherType
+	// baz is baz
+	baz OtherType
 }
 
 type OtherType struct {
@@ -77,10 +77,10 @@ func Hello() {
     "label": "Bar"
   },
   {
-    "detail": "Baz OtherType",
-    "documentation": "Baz is baz",
-    "insertText": "Baz",
+    "detail": "baz OtherType",
+    "documentation": "baz is baz",
+    "insertText": "baz",
     "kind": 5,
-    "label": "Baz"
+    "label": "baz"
   }
 ]

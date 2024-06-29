@@ -13,7 +13,8 @@ func TestParsePackage(t *testing.T) {
 		Dir: "testdata",
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
 			"printSymbols": func(ts *testscript.TestScript, neg bool, arg []string) { //nolint:unparam
-				pkg, err := gno.ParsePackage(ts.Getenv("WORK"), "")
+				wd := ts.Getenv("WORK")
+				pkg, err := gno.ParsePackage(wd, wd, "")
 				if err != nil {
 					ts.Fatalf("gno.ParsePackage: %v", err)
 				}

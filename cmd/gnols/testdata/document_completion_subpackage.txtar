@@ -19,6 +19,8 @@ var X int
 
 func Bye() {}
 
+var y string
+
 type SubStruct {}
 -- input/initialize.json --
 {
