@@ -99,10 +99,10 @@ type symbolFinder struct {
 }
 
 func (s symbolFinder) find(selectors []string) []gno.Symbol {
-	return s.find_(s.baseSymbols, selectors)
+	return s.findIn(s.baseSymbols, selectors)
 }
 
-func (s symbolFinder) find_(symbols []gno.Symbol, selectors []string) []gno.Symbol {
+func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Symbol {
 	slog.Info("lookup symbol", "symbols", symbols, "selectors", selectors)
 	if len(selectors) == 0 {
 		return symbols
@@ -121,12 +121,11 @@ func (s symbolFinder) find_(symbols []gno.Symbol, selectors []string) []gno.Symb
 					return sym.Fields
 				}
 				// lookup for symbols matching type in baseSymbols
-				return s.find_(s.baseSymbols, append([]string{sym.Type}, selectors[1:]...))
+				return s.findIn(s.baseSymbols, append([]string{sym.Type}, selectors[1:]...))
 
 			case "struct":
 				// sym is a struct, lookup in fields
-				return s.find_(sym.Fields, selectors[1:])
-
+				return s.findIn(sym.Fields, selectors[1:])
 			}
 
 		case strings.HasPrefix(sym.Name, name): // partial match
