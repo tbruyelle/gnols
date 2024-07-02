@@ -23,67 +23,57 @@ type Symbol struct {
 	Recv      string   `json:",omitempty"`
 	Fields    []Symbol `json:",omitempty"`
 	Type      string   `json:",omitempty"`
-	PkgPath   string   `json:",omitempty"`
 }
 
-func ParsePackage(wd, dir, importPath string) (*Package, error) {
-	symbols := []Symbol{}
-	files, err := getFiles(dir)
+// ParsePackages parses gno files in rootDir and sub-directories, and returns
+// Packages with all the symbols.
+// If wd is provided and is different from the file being parsed, then only
+// public symbols are returned.
+func ParsePackages(wd, rootDir string) ([]Package, error) {
+	dirs, err := getDirs(rootDir)
 	if err != nil {
 		return nil, err
 	}
-	for _, file := range files {
-		syms, err := getSymbols(wd, dir, file)
+	var pkgs []Package
+	for _, dir := range dirs {
+		files, err := getFiles(dir)
 		if err != nil {
 			return nil, err
 		}
-		symbols = append(symbols, syms...)
-	}
-	if len(symbols) == 0 {
-		// Ignore directories w/o symbols
-		return nil, nil //nolint:nilnil
-	}
-
-	return &Package{
-		Name:       filepath.Base(dir),
-		ImportPath: importPath,
-		Symbols:    symbols,
-	}, nil
-}
-
-// FIXME since getFiles returns subfolders now, this function is useless and
-// returns duplicates
-func ParsePackages(wd, dir string) ([]Package, error) {
-	var pkgs []Package
-	dirs, err := getDirs(dir)
-	if err != nil {
-		return nil, err
-	}
-	for _, d := range dirs {
 		// convert to import path:
 		// get path relative to dir, and convert separators to slashes.
-		ip := strings.ReplaceAll(
-			strings.TrimPrefix(d, dir+string(filepath.Separator)),
-			string(filepath.Separator), "/",
-		)
-		pkg, err := ParsePackage(wd, d, ip)
+		rel, err := filepath.Rel(rootDir, dir)
 		if err != nil {
 			return nil, err
 		}
-		if pkg != nil {
-			pkgs = append(pkgs, *pkg)
+		ip := strings.ReplaceAll(rel, string(filepath.Separator), "/")
+		pkg := Package{
+			Name:       filepath.Base(dir),
+			ImportPath: ip,
+		}
+		for _, file := range files {
+			symbols, err := getSymbols(wd, file)
+			if err != nil {
+				return nil, err
+			}
+			pkg.Symbols = append(pkg.Symbols, symbols...)
+		}
+		if len(pkg.Symbols) > 0 {
+			pkgs = append(pkgs, pkg)
 		}
 	}
+
 	return pkgs, nil
 }
 
+// getDirs returns all directories inside path, ignoring hidden directories.
 func getDirs(path string) ([]string, error) {
 	var dirs []string
 	err := filepath.WalkDir(path, func(dir string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() {
+		if d.IsDir() && filepath.Base(dir)[0] != '.' { // avoid hidden dir
 			dirs = append(dirs, dir)
 		}
 		return nil
@@ -91,6 +81,10 @@ func getDirs(path string) ([]string, error) {
 	return dirs, err
 }
 
+// getFiles returns all the gno non-tests files inside path.
+//
+// TODO parse test files inside wd so completion can work with symbols created
+// in test files.
 func getFiles(path string) ([]string, error) {
 	var files []string
 
@@ -99,6 +93,9 @@ func getFiles(path string) ([]string, error) {
 			return err
 		}
 		if d.IsDir() {
+			return nil
+		}
+		if filepath.Dir(file) != path {
 			return nil
 		}
 		if strings.Contains(file, "_test") {
@@ -114,7 +111,9 @@ func getFiles(path string) ([]string, error) {
 	return files, err
 }
 
-func getSymbols(wd, dir string, filename string) ([]Symbol, error) {
+// getSymbols returns all symbols found in filename. If wd is different than
+// filname path, only public symbols are returned.
+func getSymbols(wd string, filename string) ([]Symbol, error) {
 	var symbols []Symbol
 
 	// Create a FileSet to work with.
@@ -130,15 +129,34 @@ func getSymbols(wd, dir string, filename string) ([]Symbol, error) {
 	}
 	text := string(bsrc)
 
-	if wd != filepath.Dir(filename) {
+	isCurrentDir := wd == filepath.Dir(filename)
+	if !isCurrentDir {
 		// Trim AST to exported declarations only if not in working dir
 		ast.FileExports(file)
 	}
 
+	var (
+		nestedCount int
+		// A node is exported if ast.IsExported() returns true AND if its
+		// declaration is at top level. For this we rely on the nestedCount
+		// variable, which is incremented when ast.Inspect goes down inside the
+		// nodes, and decremeted when it goes up.
+		// This is required for filter out the variables and types that have an
+		// uppercase in the name but are declared inside a block. In that case they
+		// are not visible outside of the package.
+		isExported = func(name string) bool {
+			return ast.IsExported(name) && nestedCount < 4
+		}
+	)
 	ast.Inspect(file, func(n ast.Node) bool {
-		var found []Symbol
+		if n == nil {
+			nestedCount--
+		} else {
+			nestedCount++
+		}
+		var found *Symbol
 
-		// fmt.Println("NODE", filename, spew.Sdump(n))
+		// fmt.Println("NODE", filename, nestedCount, spew.Sdump(n))
 		switch n := n.(type) {
 		case *ast.FuncDecl:
 			found = function(n, text)
@@ -154,14 +172,10 @@ func getSymbols(wd, dir string, filename string) ([]Symbol, error) {
 		}
 
 		if found != nil {
-			rel, err := filepath.Rel(dir, filename)
-			if err == nil {
-				pkgPath := filepath.Dir(rel)
-				for i := range found {
-					found[i].PkgPath = pkgPath
-				}
+			if isCurrentDir || isExported(found.Name) {
+				// append only if current directory or node is exported
+				symbols = append(symbols, *found)
 			}
-			symbols = append(symbols, found...)
 		}
 
 		return true
@@ -170,26 +184,26 @@ func getSymbols(wd, dir string, filename string) ([]Symbol, error) {
 	return symbols, nil
 }
 
-func declaration(n *ast.GenDecl, source string) []Symbol {
+func declaration(n *ast.GenDecl, source string) *Symbol {
 	for _, spec := range n.Specs {
 		switch t := spec.(type) { //nolint:gocritic
 		case *ast.TypeSpec:
 			typ, fields := typeFromExpr(t.Type, source)
-			return []Symbol{{
+			return &Symbol{
 				Name:      t.Name.Name,
 				Doc:       strings.TrimSpace(n.Doc.Text()),
 				Signature: strings.Split(source[t.Pos()-1:t.End()-1], " {")[0],
 				Kind:      typeName(*t),
 				Type:      typ,
 				Fields:    fields,
-			}}
+			}
 		}
 	}
 
 	return nil
 }
 
-func function(n *ast.FuncDecl, source string) []Symbol {
+func function(n *ast.FuncDecl, source string) *Symbol {
 	var recv string
 	if n.Recv != nil {
 		recv, _ = typeFromExpr(n.Recv.List[0].Type, source)
@@ -197,43 +211,50 @@ func function(n *ast.FuncDecl, source string) []Symbol {
 			return nil
 		}
 	}
-	return []Symbol{{
+	return &Symbol{
 		Name:      n.Name.Name,
 		Doc:       n.Doc.Text(),
 		Signature: strings.Split(source[n.Pos()-1:n.End()-1], " {")[0],
 		Kind:      "func",
 		Recv:      recv,
-	}}
+	}
 }
 
-func assignment(n *ast.AssignStmt, source string) []Symbol {
+func assignment(n *ast.AssignStmt, source string) *Symbol {
 	typ, fields := typeFromExpr(n.Rhs[0], source)
-	return []Symbol{{
+	return &Symbol{
 		Name:      n.Lhs[0].(*ast.Ident).Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
 		Type:      typ,
 		Fields:    fields,
-	}}
+	}
 }
 
-func variable(n *ast.ValueSpec, source string) []Symbol {
+func variable(n *ast.ValueSpec, source string) *Symbol {
 	typ, fields := typeFromExpr(n.Type, source)
-	return []Symbol{{
+	return &Symbol{
 		Name:      n.Names[0].Name,
 		Doc:       strings.TrimSpace(n.Doc.Text()),
 		Signature: source[n.Pos()-1 : n.End()-1],
 		Kind:      "var",
 		Type:      typ,
 		Fields:    fields,
-	}}
+	}
 }
 
 func fieldsFromStruct(st *ast.StructType, source string) (fields []Symbol) {
 	for _, f := range st.Fields.List {
 		typ, subfields := typeFromExpr(f.Type, source)
+		var name string
+		if len(f.Names) > 0 {
+			name = f.Names[0].Name
+		} else {
+			// f is an embedded struct, use type name as the name.
+			name = typ
+		}
 		fields = append(fields, Symbol{
-			Name:      f.Names[0].Name,
+			Name:      name,
 			Doc:       strings.TrimSpace(f.Doc.Text()),
 			Signature: source[f.Pos()-1 : f.End()-1],
 			Kind:      "field",

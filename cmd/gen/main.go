@@ -37,7 +37,7 @@ func main() {
 
 	var pkgs []gno.Package
 	for _, dir := range dirs {
-		dirPkgs, err := gno.ParsePackages(dir)
+		dirPkgs, err := gno.ParsePackages("", dir)
 		if err != nil {
 			panic(err)
 		}

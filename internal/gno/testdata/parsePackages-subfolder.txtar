@@ -1,9 +1,5 @@
 printSymbols
 cmp stdout expected.json
--- x.gno --
-package foo
-
-func Hello() {}
 -- sub/y.gno --
 package sub
 
@@ -13,52 +9,73 @@ type X struct {
 }
 
 var Y int
+
+func bye() {
+	x := 0
+	Z := 1
+	type T struct{}
+}
+
+func Hello() {
+	x := 0
+	Z := 1
+	type T struct{}
+}
 -- sub/sub2/y.gno --
 package sub
 
 type X struct{}
 
 var Y int
+-- empty/file.txt --
+hello world
 -- expected.json --
 [
   {
-    "Name": "X",
-    "Signature": "X struct{}",
-    "Kind": "struct",
-    "PkgPath": "sub/sub2"
-  },
-  {
-    "Name": "Y",
-    "Signature": "Y int",
-    "Kind": "var",
-    "Type": "int",
-    "PkgPath": "sub/sub2"
-  },
-  {
-    "Name": "X",
-    "Signature": "X struct",
-    "Kind": "struct",
-    "Fields": [
+    "Name": "sub",
+    "ImportPath": "sub",
+    "Symbols": [
       {
-        "Name": "Public",
-        "Signature": "Public  int",
-        "Kind": "field",
+        "Name": "X",
+        "Signature": "X struct",
+        "Kind": "struct",
+        "Fields": [
+          {
+            "Name": "Public",
+            "Signature": "Public  int",
+            "Kind": "field",
+            "Type": "int"
+          }
+        ]
+      },
+      {
+        "Name": "Y",
+        "Signature": "Y int",
+        "Kind": "var",
+        "Type": "int"
+      },
+      {
+        "Name": "Hello",
+        "Signature": "func Hello()",
+        "Kind": "func"
+      }
+    ]
+  },
+  {
+    "Name": "sub2",
+    "ImportPath": "sub/sub2",
+    "Symbols": [
+      {
+        "Name": "X",
+        "Signature": "X struct{}",
+        "Kind": "struct"
+      },
+      {
+        "Name": "Y",
+        "Signature": "Y int",
+        "Kind": "var",
         "Type": "int"
       }
-    ],
-    "PkgPath": "sub"
-  },
-  {
-    "Name": "Y",
-    "Signature": "Y int",
-    "Kind": "var",
-    "Type": "int",
-    "PkgPath": "sub"
-  },
-  {
-    "Name": "Hello",
-    "Signature": "func Hello()",
-    "Kind": "func",
-    "PkgPath": "."
+    ]
   }
 ]

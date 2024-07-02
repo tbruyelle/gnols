@@ -15,8 +15,10 @@ import (
 type handler struct {
 	connPool  jsonrpc2.Conn
 	documents *store.DocumentStore
-	// symbols contains the workspace's symbols.
-	symbols    []gno.Symbol
+	// currentPkg contains the workspace's symbols
+	currentPkg gno.Package
+	// subPkgs contains sub packages' symbols
+	subPkgs    []gno.Package
 	binManager *gno.BinManager
 	// initialized becomes true after `initialize` message is received.
 	initialized bool
@@ -165,11 +167,18 @@ func (h *handler) notifyErr(ctx context.Context, err error) {
 }
 
 func (h *handler) updateSymbols() error {
-	pkg, err := gno.ParsePackage(h.workspaceFolder, h.workspaceFolder, "")
+	pkgs, err := gno.ParsePackages(h.workspaceFolder, h.workspaceFolder)
 	if err != nil {
 		return fmt.Errorf("updateSymbols: %w", err)
 	}
-	slog.Info("update workspace packages", "symbols", pkg.Symbols)
-	h.symbols = pkg.Symbols
+	h.subPkgs = nil
+	for _, pkg := range pkgs {
+		if pkg.ImportPath == "." {
+			h.currentPkg = pkg
+		} else {
+			h.subPkgs = append(h.subPkgs, pkg)
+		}
+	}
+	slog.Info("update workspace packages", "current", h.currentPkg, "subs", h.subPkgs)
 	return nil
 }

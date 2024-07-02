@@ -14,37 +14,42 @@ var X struct {
 -- expected.json --
 [
   {
-    "Name": "X",
-    "Signature": "X struct {\n\t// A is a\n\tA int\n\tB string\n\tC struct {\n\t\tX uint64\n\t}\n}",
-    "Kind": "var",
-    "Fields": [
+    "Name": "script-parsePackages-inline-struct",
+    "ImportPath": ".",
+    "Symbols": [
       {
-        "Name": "A",
-        "Doc": "A is a",
-        "Signature": "A int",
-        "Kind": "field",
-        "Type": "int"
-      },
-      {
-        "Name": "B",
-        "Signature": "B string",
-        "Kind": "field",
-        "Type": "string"
-      },
-      {
-        "Name": "C",
-        "Signature": "C struct {\n\t\tX uint64\n\t}",
-        "Kind": "field",
+        "Name": "X",
+        "Signature": "X struct {\n\t// A is a\n\tA int\n\tB string\n\tC struct {\n\t\tX uint64\n\t}\n}",
+        "Kind": "var",
         "Fields": [
           {
-            "Name": "X",
-            "Signature": "X uint64",
+            "Name": "A",
+            "Doc": "A is a",
+            "Signature": "A int",
             "Kind": "field",
-            "Type": "uint64"
+            "Type": "int"
+          },
+          {
+            "Name": "B",
+            "Signature": "B string",
+            "Kind": "field",
+            "Type": "string"
+          },
+          {
+            "Name": "C",
+            "Signature": "C struct {\n\t\tX uint64\n\t}",
+            "Kind": "field",
+            "Fields": [
+              {
+                "Name": "X",
+                "Signature": "X uint64",
+                "Kind": "field",
+                "Type": "uint64"
+              }
+            ]
           }
         ]
       }
-    ],
-    "PkgPath": "."
+    ]
   }
 ]

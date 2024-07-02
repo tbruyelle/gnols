@@ -1,0 +1,56 @@
+printSymbols
+cmp stdout expected.json
+-- x.gno --
+package foo
+
+// MyType is my type
+type MyType struct {
+	OtherType
+	A int
+}
+
+type OtherType struct {
+	X int
+}
+-- expected.json --
+[
+  {
+    "Name": "script-parsePackages-embeded",
+    "ImportPath": ".",
+    "Symbols": [
+      {
+        "Name": "MyType",
+        "Doc": "MyType is my type",
+        "Signature": "MyType struct",
+        "Kind": "struct",
+        "Fields": [
+          {
+            "Name": "OtherType",
+            "Signature": "OtherType",
+            "Kind": "field",
+            "Type": "OtherType"
+          },
+          {
+            "Name": "A",
+            "Signature": "A int",
+            "Kind": "field",
+            "Type": "int"
+          }
+        ]
+      },
+      {
+        "Name": "OtherType",
+        "Signature": "OtherType struct",
+        "Kind": "struct",
+        "Fields": [
+          {
+            "Name": "X",
+            "Signature": "X int",
+            "Kind": "field",
+            "Type": "int"
+          }
+        ]
+      }
+    ]
+  }
+]

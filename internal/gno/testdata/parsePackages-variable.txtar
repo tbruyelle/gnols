@@ -25,78 +25,78 @@ func Hello() {
 -- expected.json --
 [
   {
-    "Name": "MyType",
-    "Doc": "MyType is my type",
-    "Signature": "MyType struct",
-    "Kind": "struct",
-    "Fields": [
+    "Name": "script-parsePackages-variable",
+    "ImportPath": ".",
+    "Symbols": [
       {
-        "Name": "A",
-        "Doc": "A is a",
-        "Signature": "A int",
-        "Kind": "field",
-        "Type": "int"
+        "Name": "MyType",
+        "Doc": "MyType is my type",
+        "Signature": "MyType struct",
+        "Kind": "struct",
+        "Fields": [
+          {
+            "Name": "A",
+            "Doc": "A is a",
+            "Signature": "A int",
+            "Kind": "field",
+            "Type": "int"
+          },
+          {
+            "Name": "B",
+            "Signature": "B string",
+            "Kind": "field",
+            "Type": "string"
+          },
+          {
+            "Name": "C",
+            "Signature": "C OtherType",
+            "Kind": "field",
+            "Type": "OtherType"
+          },
+          {
+            "Name": "d",
+            "Signature": "d int",
+            "Kind": "field",
+            "Type": "int"
+          }
+        ]
       },
       {
-        "Name": "B",
-        "Signature": "B string",
-        "Kind": "field",
+        "Name": "OtherType",
+        "Signature": "OtherType struct",
+        "Kind": "struct",
+        "Fields": [
+          {
+            "Name": "X",
+            "Signature": "X int",
+            "Kind": "field",
+            "Type": "int"
+          }
+        ]
+      },
+      {
+        "Name": "Z",
+        "Signature": "Z string",
+        "Kind": "var",
         "Type": "string"
       },
       {
-        "Name": "C",
-        "Signature": "C OtherType",
-        "Kind": "field",
-        "Type": "OtherType"
+        "Name": "Hello",
+        "Signature": "func Hello()",
+        "Kind": "func"
       },
       {
-        "Name": "d",
-        "Signature": "d int",
-        "Kind": "field",
-        "Type": "int"
-      }
-    ],
-    "PkgPath": "."
-  },
-  {
-    "Name": "OtherType",
-    "Signature": "OtherType struct",
-    "Kind": "struct",
-    "Fields": [
+        "Name": "x",
+        "Signature": "x := MyType{}",
+        "Kind": "var",
+        "Type": "MyType"
+      },
       {
-        "Name": "X",
-        "Signature": "X int",
-        "Kind": "field",
-        "Type": "int"
+        "Name": "y",
+        "Signature": "y := \u0026MyType{}",
+        "Kind": "var",
+        "Type": "MyType"
       }
-    ],
-    "PkgPath": "."
-  },
-  {
-    "Name": "Z",
-    "Signature": "Z string",
-    "Kind": "var",
-    "Type": "string",
-    "PkgPath": "."
-  },
-  {
-    "Name": "Hello",
-    "Signature": "func Hello()",
-    "Kind": "func",
-    "PkgPath": "."
-  },
-  {
-    "Name": "x",
-    "Signature": "x := MyType{}",
-    "Kind": "var",
-    "Type": "MyType",
-    "PkgPath": "."
-  },
-  {
-    "Name": "y",
-    "Signature": "y := \u0026MyType{}",
-    "Kind": "var",
-    "Type": "MyType",
-    "PkgPath": "."
+    ]
   }
 ]

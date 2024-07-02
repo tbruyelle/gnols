@@ -14,11 +14,11 @@ func TestParsePackage(t *testing.T) {
 		Cmds: map[string]func(*testscript.TestScript, bool, []string){
 			"printSymbols": func(ts *testscript.TestScript, neg bool, arg []string) { //nolint:unparam
 				wd := ts.Getenv("WORK")
-				pkg, err := gno.ParsePackage(wd, wd, "")
+				pkgs, err := gno.ParsePackages(wd, wd)
 				if err != nil {
 					ts.Fatalf("gno.ParsePackage: %v", err)
 				}
-				bz, _ := json.MarshalIndent(pkg.Symbols, "", "  ")
+				bz, _ := json.MarshalIndent(pkgs, "", "  ")
 				ts.Stdout().Write(bz)           //nolint:errcheck
 				ts.Stdout().Write([]byte{'\n'}) //nolint:errcheck
 			},
