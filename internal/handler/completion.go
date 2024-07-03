@@ -112,7 +112,7 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 	for _, sym := range symbols {
 		switch {
 		case sym.Name == name: // exact match
-			slog.Info("found symbol", "name", name, "kind", sym.Kind, "selectors", selectors)
+			slog.Info("found symbol", "name", name, "kind", sym.Kind, "type", sym.Type, "selectors", selectors)
 			// we found a symbol matching name
 			switch sym.Kind {
 			case "var", "field":

@@ -19,10 +19,6 @@ type MyType struct {
 	baz OtherType
 }
 
-type OtherType struct {
-	X uint64
-}
-
 var x = MyType{}
 
 func Hello() {
@@ -58,7 +54,7 @@ func Hello() {
 	},
 	"position": {
 		"character": 3,
-		"line": 19
+		"line": 15
 	}
 }
 -- expected/completion_x.json --

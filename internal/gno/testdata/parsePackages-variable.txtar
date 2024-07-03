@@ -16,7 +16,12 @@ type OtherType struct {
 	X int
 }
 
-var Z string
+var (
+	G1 = ""
+	G2 string
+	G3 = MyType{}
+	G4 = struct{ A int }
+)
 
 func Hello() {
 	x := MyType{}
@@ -75,10 +80,35 @@ func Hello() {
         ]
       },
       {
-        "Name": "Z",
-        "Signature": "Z string",
+        "Name": "G1",
+        "Signature": "G1 = \"\"",
         "Kind": "var",
         "Type": "string"
+      },
+      {
+        "Name": "G2",
+        "Signature": "G2 string",
+        "Kind": "var",
+        "Type": "string"
+      },
+      {
+        "Name": "G3",
+        "Signature": "G3 = MyType{}",
+        "Kind": "var",
+        "Type": "MyType"
+      },
+      {
+        "Name": "G4",
+        "Signature": "G4 = struct{ A int }",
+        "Kind": "var",
+        "Fields": [
+          {
+            "Name": "A",
+            "Signature": "A int",
+            "Kind": "field",
+            "Type": "int"
+          }
+        ]
       },
       {
         "Name": "Hello",

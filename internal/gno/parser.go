@@ -188,7 +188,7 @@ func declaration(n *ast.GenDecl, source string) *Symbol {
 	for _, spec := range n.Specs {
 		switch t := spec.(type) { //nolint:gocritic
 		case *ast.TypeSpec:
-			typ, fields := typeFromExpr(t.Type, source)
+			typ, fields := typeFromNode(t.Type, source)
 			return &Symbol{
 				Name:      t.Name.Name,
 				Doc:       strings.TrimSpace(n.Doc.Text()),
@@ -206,7 +206,7 @@ func declaration(n *ast.GenDecl, source string) *Symbol {
 func function(n *ast.FuncDecl, source string) *Symbol {
 	var recv string
 	if n.Recv != nil {
-		recv, _ = typeFromExpr(n.Recv.List[0].Type, source)
+		recv, _ = typeFromNode(n.Recv.List[0].Type, source)
 		if !ast.IsExported(recv) {
 			return nil
 		}
@@ -221,7 +221,7 @@ func function(n *ast.FuncDecl, source string) *Symbol {
 }
 
 func assignment(n *ast.AssignStmt, source string) *Symbol {
-	typ, fields := typeFromExpr(n.Rhs[0], source)
+	typ, fields := typeFromNode(n.Rhs[0], source)
 	return &Symbol{
 		Name:      n.Lhs[0].(*ast.Ident).Name,
 		Signature: source[n.Pos()-1 : n.End()-1],
@@ -232,7 +232,7 @@ func assignment(n *ast.AssignStmt, source string) *Symbol {
 }
 
 func variable(n *ast.ValueSpec, source string) *Symbol {
-	typ, fields := typeFromExpr(n.Type, source)
+	typ, fields := typeFromNode(n, source)
 	return &Symbol{
 		Name:      n.Names[0].Name,
 		Doc:       strings.TrimSpace(n.Doc.Text()),
@@ -245,7 +245,7 @@ func variable(n *ast.ValueSpec, source string) *Symbol {
 
 func fieldsFromStruct(st *ast.StructType, source string) (fields []Symbol) {
 	for _, f := range st.Fields.List {
-		typ, subfields := typeFromExpr(f.Type, source)
+		typ, subfields := typeFromNode(f.Type, source)
 		var name string
 		if len(f.Names) > 0 {
 			name = f.Names[0].Name
@@ -265,14 +265,24 @@ func fieldsFromStruct(st *ast.StructType, source string) (fields []Symbol) {
 	return
 }
 
-func typeFromExpr(x ast.Expr, source string) (string, []Symbol) {
+func typeFromNode(x ast.Node, source string) (string, []Symbol) {
 	switch x := x.(type) {
 	case *ast.Ident:
 		return x.Name, nil
+	case *ast.ValueSpec:
+		if x.Type != nil {
+			return typeFromNode(x.Type, source)
+		}
+		if len(x.Values) > 0 {
+			return typeFromNode(x.Values[0], source)
+		}
+	case *ast.BasicLit:
+		// ugly trick to convert Kind to ast ident for types
+		return strings.ToLower(x.Kind.String()), nil
 	case *ast.CompositeLit:
-		return typeFromExpr(x.Type, source)
+		return typeFromNode(x.Type, source)
 	case *ast.UnaryExpr:
-		return typeFromExpr(x.X, source)
+		return typeFromNode(x.X, source)
 	case *ast.StructType: // inline struct
 		return "", fieldsFromStruct(x, source)
 	}
