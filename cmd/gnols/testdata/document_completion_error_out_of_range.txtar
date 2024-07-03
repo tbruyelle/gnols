@@ -1,0 +1,50 @@
+# Init phase
+lsp initialize input/initialize.json
+lsp initialized input/initialized.json
+lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
+lsp textDocument/didOpen input/didOpen_x.json
+
+lsp textDocument/completion input/completion.json
+cmpenv output/completion.json expected/completion.json
+-- x.gno --
+package foo
+-- input/initialize.json --
+{
+	"rootUri": "file://$WORK"
+}
+-- input/initialized.json --
+{}
+-- input/didChangeConfiguration.json --
+{
+	"settings": {
+		"gno":              "$GOBIN/gno",
+		"gopls":            "$GOBIN/gopls",
+		"root":             "$GNOPATH",
+		"precompileOnSave": true,
+		"buildOnSave":      true
+	}
+}
+-- input/didOpen_x.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno",
+		"text":"${FILE_x.gno}"
+	}
+}
+-- input/completion.json --
+{
+	"textDocument": {
+		"uri":"file://$WORK/x.gno"
+	},
+	"position": {
+		"character": 9,
+		"line": 3
+	}
+}
+-- expected/completion.json --
+{
+  "error": {
+    "code": 0,
+    "message": "line out of range"
+  }
+}
