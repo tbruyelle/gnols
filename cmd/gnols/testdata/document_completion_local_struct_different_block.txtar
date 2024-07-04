@@ -9,18 +9,8 @@ cmpenv output/completion_x.json expected/completion_x.json
 -- x.gno --
 package foo
 
-// MyType is my type
 type MyType struct {
-	// Foo is foo
-	Foo int
-	// Bar is bar
-	Bar string
-	// baz is baz
-	baz OtherType
-}
-
-type OtherType struct {
-	X uint64
+	A int
 }
 
 func Hello() {
@@ -28,7 +18,7 @@ func Hello() {
 }
 
 func Bye() {
-	x. // completion here, should return all fields of MyType
+	x. // completion here, should return nothing bc x is declared in a different block
 }
 -- input/initialize.json --
 {
@@ -60,7 +50,7 @@ func Bye() {
 	},
 	"position": {
 		"character": 3,
-		"line": 21
+		"line": 11
 	}
 }
 -- expected/completion_x.json --
