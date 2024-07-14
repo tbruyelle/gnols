@@ -23,7 +23,7 @@ func (h *handler) handleTextDocumentFormatting(ctx context.Context, reply jsonrp
 
 	slog.Info("formatting", "pre", doc.Content)
 
-	formatted, err := h.getBinManager().Format(doc.Content)
+	formatted, err := h.getBinManager().Format(params.TextDocument.URI.Filename())
 	if err != nil {
 		return replyErr(ctx, reply, fmt.Errorf("formatting: %w", err))
 	}

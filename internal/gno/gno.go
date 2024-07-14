@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go/format"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -111,11 +110,14 @@ func (m *BinManager) RunGopls(ctx context.Context, args ...string) ([]byte, erro
 	return buf.Bytes(), nil
 }
 
-// Format a Gno file using std formatter.
-//
-// TODO: support other tools?
+// Format a Gno file using gno fmt.
 func (m *BinManager) Format(gnoFile string) ([]byte, error) {
-	return format.Source([]byte(gnoFile))
+	args := []string{"fmt", gnoFile}
+	bz, err := exec.Command(m.gno, args...).CombinedOutput() //nolint:gosec
+	if err != nil {
+		return bz, fmt.Errorf("running '%s %s': %w: %s", m.gno, strings.Join(args, " "), err, string(bz))
+	}
+	return bz, nil
 }
 
 // Transpile a Gno package: gno transpile <m.workspaceFolder>.
