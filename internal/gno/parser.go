@@ -20,9 +20,10 @@ type Symbol struct {
 	Doc       string `json:",omitempty"`
 	Signature string `json:",omitempty"`
 	Kind      string
-	Recv      string   `json:",omitempty"`
-	Fields    []Symbol `json:",omitempty"`
-	Type      string   `json:",omitempty"`
+	Recv      string `json:",omitempty"`
+	// Fields contains fields and methods
+	Fields []Symbol `json:",omitempty"`
+	Type   string   `json:",omitempty"`
 }
 
 // ParsePackages parses gno files in rootDir and sub-directories, and returns
