@@ -219,15 +219,18 @@ func declaration(n *ast.GenDecl, source string) *Symbol {
 }
 
 func function(n *ast.FuncDecl, source string) *Symbol {
-	var recv string
+	var kind, recv string
 	if n.Recv != nil {
 		recv, _ = typeFromNode(n.Recv.List[0].Type, source)
+		kind = "method"
+	} else {
+		kind = "func"
 	}
 	return &Symbol{
 		Name:      n.Name.Name,
 		Doc:       n.Doc.Text(),
 		Signature: strings.Split(source[n.Pos()-1:n.End()-1], " {")[0],
-		Kind:      "func",
+		Kind:      kind,
 		Recv:      recv,
 	}
 }

@@ -71,7 +71,7 @@ func Hello() {
           {
             "Name": "F",
             "Signature": "func (MyType) F(int) bool",
-            "Kind": "func",
+            "Kind": "method",
             "Recv": "MyType"
           }
         ]
@@ -90,7 +90,7 @@ func Hello() {
           {
             "Name": "f",
             "Signature": "func (otherType) f(int) bool",
-            "Kind": "func",
+            "Kind": "method",
             "Recv": "otherType"
           }
         ]
