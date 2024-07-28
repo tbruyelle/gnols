@@ -180,6 +180,20 @@ func getSymbols(wd string, filename string) ([]Symbol, error) {
 
 		return true
 	})
+	// final loop on symbols to attach methods to struct for convenience
+	for i := len(symbols) - 1; i >= 0; i-- {
+		if symbols[i].Recv != "" {
+			// attach method to struct
+			for j := 0; j < len(symbols); j++ {
+				if symbols[j].Name == symbols[i].Recv {
+					symbols[j].Fields = append(symbols[j].Fields, symbols[i])
+					break
+				}
+			}
+			// remove from main symbols
+			symbols = append(symbols[:i], symbols[i+1:]...)
+		}
+	}
 
 	return symbols, nil
 }
@@ -207,9 +221,6 @@ func function(n *ast.FuncDecl, source string) *Symbol {
 	var recv string
 	if n.Recv != nil {
 		recv, _ = typeFromNode(n.Recv.List[0].Type, source)
-		if !ast.IsExported(recv) {
-			return nil
-		}
 	}
 	return &Symbol{
 		Name:      n.Name.Name,
