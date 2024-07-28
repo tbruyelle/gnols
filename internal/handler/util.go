@@ -82,6 +82,8 @@ func symbolToKind(symbol string) protocol.CompletionItemKind {
 		return protocol.CompletionItemKindConstant
 	case "func":
 		return protocol.CompletionItemKindFunction
+	case "method":
+		return protocol.CompletionItemKindMethod
 	case "type":
 		return protocol.CompletionItemKindClass
 	case "var":

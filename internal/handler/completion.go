@@ -2,11 +2,15 @@ package handler
 
 import (
 	"context"
+	"go/ast"
+	gotoken "go/token"
 	"log/slog"
 	"strings"
 
+	"golang.org/x/tools/go/ast/astutil"
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jdkato/gnols/internal/gno"
-	"github.com/jdkato/gnols/internal/stdlib"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
@@ -27,7 +31,6 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 		return replyErr(ctx, reply, err)
 	}
 	text := strings.TrimSpace(token.Text)
-
 	// Extract symbol name and prefix from text
 	// TODO ensure textDocument/completion is only triggered after a dot '.' and
 	// if yes why ? Is it a client limitation or configuration, or a LSP spec?
@@ -37,44 +40,87 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 
 	items := []protocol.CompletionItem{}
 
-	//-----------------------------------------
-	// Look up local symbols
-	if syms := h.lookupSymbols(selectors); len(syms) > 0 {
-		for _, f := range syms {
-			items = append(items, protocol.CompletionItem{
-				Label:         f.Name,
-				InsertText:    f.Name,
-				Kind:          symbolToKind(f.Kind),
-				Detail:        f.Signature,
-				Documentation: f.Doc,
-			})
-		}
-	} else {
-		//-----------------------------------------
-		// Look up stdlib
-		if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
-			for _, s := range pkg.Symbols {
-				if s.Recv != "" {
-					// skip symbols with receiver (methods)
-					continue
-				}
-				if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
-					// TODO handle multiple selectors? (possible if for example a global
-					// var is defined in the pkg, and the user is referrencing it.)
+	pos := gotoken.Pos(doc.PositionToOffset(params.Position))
+	nodes, _ := astutil.PathEnclosingInterval(doc.Pgf.File, pos, pos)
+	spew.Dump("ENCLOSING NODES", nodes)
+	for _, n := range nodes {
+		switch n := n.(type) {
+		case *ast.FuncDecl:
+			for _, param := range n.Type.Params.List {
+				if param.Names[0].Name == selectors[0] {
+					// match, find corresponding type
+					var typ string
+					switch t := param.Type.(type) {
+					case *ast.Ident:
+						typ = t.Name
+					case *ast.SelectorExpr:
+						// TODO find corresponding sub package or stdlib or ??
+						// and call symbolFind{FOUNDPKG}.find(...)
+					default:
+						panic("FIXME cannot find type")
+					}
+					spew.Dump("FIND", param.Type, selectors)
+					syms := symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
+					// if len(syms) == 0 {
+					// syms = symbolFinder{h.subPkgs}.find(append([]string{typ}, selectors[1:]...))
+					// }
 
-					// skip symbols that doesn't match the prefix
-					continue
+					spew.Dump("FOUND", syms)
+					for _, f := range syms {
+						items = append(items, protocol.CompletionItem{
+							Label:         f.Name,
+							InsertText:    f.Name,
+							Kind:          symbolToKind(f.Kind),
+							Detail:        f.Signature,
+							Documentation: f.Doc,
+						})
+					}
+					return reply(ctx, items, nil)
 				}
-				items = append(items, protocol.CompletionItem{
-					Label:         s.Name,
-					InsertText:    s.Name,
-					Kind:          symbolToKind(s.Kind),
-					Detail:        s.Signature,
-					Documentation: s.Doc,
-				})
 			}
 		}
 	}
+
+	/*
+		//-----------------------------------------
+		// Look up local symbols
+		if syms := h.lookupSymbols(selectors); len(syms) > 0 {
+			for _, f := range syms {
+				items = append(items, protocol.CompletionItem{
+					Label:         f.Name,
+					InsertText:    f.Name,
+					Kind:          symbolToKind(f.Kind),
+					Detail:        f.Signature,
+					Documentation: f.Doc,
+				})
+			}
+		} else {
+			//-----------------------------------------
+			// Look up stdlib
+			if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
+				for _, s := range pkg.Symbols {
+					if s.Recv != "" {
+						// skip symbols with receiver (methods)
+						continue
+					}
+					if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
+						// TODO handle multiple selectors? (possible if for example a global
+						// var is defined in the pkg, and the user is referrencing it.)
+
+						// skip symbols that doesn't match the prefix
+						continue
+					}
+					items = append(items, protocol.CompletionItem{
+						Label:         s.Name,
+						InsertText:    s.Name,
+						Kind:          symbolToKind(s.Kind),
+						Detail:        s.Signature,
+						Documentation: s.Doc,
+					})
+				}
+			}
+		}
+	*/
 	return reply(ctx, items, nil)
 }
 

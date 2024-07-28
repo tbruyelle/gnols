@@ -9,14 +9,18 @@ cmpenv output/completion_x.json expected/completion_x.json
 -- x.gno --
 package foo
 
-type MyType struct {
-	Foo int
+import "sub"
+
+func Hello(x sub.MyType) {
+	x. // completion here, should return all fields of MyType
 }
+-- sub/sub.gno --
+package sub
 
 func (MyType) Bar(int) bool {}
 
-func Hello(x MyType) {
-	x. // completion here, should return all fields & methods of MyType
+type MyType struct {
+	Foo int
 }
 -- input/initialize.json --
 {
@@ -48,7 +52,7 @@ func Hello(x MyType) {
 	},
 	"position": {
 		"character": 3,
-		"line": 9
+		"line": 5 
 	}
 }
 -- expected/completion_x.json --
