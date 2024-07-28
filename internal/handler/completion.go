@@ -49,18 +49,24 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 			for _, param := range n.Type.Params.List {
 				if param.Names[0].Name == selectors[0] {
 					// match, find corresponding type
-					var typ string
+					var syms []gno.Symbol
 					switch t := param.Type.(type) {
 					case *ast.Ident:
-						typ = t.Name
+						typ := t.Name
+						syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
 					case *ast.SelectorExpr:
-						// TODO find corresponding sub package or stdlib or ??
-						// and call symbolFind{FOUNDPKG}.find(...)
+						pkg := t.X.(*ast.Ident).Name
+						typ := t.Sel.Name
+						// look up pkg in subpkgs
+						for _, sub := range h.subPkgs {
+							if sub.Name == pkg {
+								syms = symbolFinder{sub.Symbols}.find(append([]string{typ}, selectors[1:]...))
+							}
+						}
 					default:
 						panic("FIXME cannot find type")
 					}
 					spew.Dump("FIND", param.Type, selectors)
-					syms := symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
 					// if len(syms) == 0 {
 					// syms = symbolFinder{h.subPkgs}.find(append([]string{typ}, selectors[1:]...))
 					// }
