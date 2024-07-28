@@ -49,6 +49,7 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 			for _, param := range n.Type.Params.List {
 				if param.Names[0].Name == selectors[0] {
 					// match, find corresponding type
+					spew.Dump("FIND", param.Type, selectors)
 					var syms []gno.Symbol
 					switch t := param.Type.(type) {
 					case *ast.Ident:
@@ -63,10 +64,10 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 								syms = symbolFinder{sub.Symbols}.find(append([]string{typ}, selectors[1:]...))
 							}
 						}
+					case *ast.InterfaceType:
 					default:
 						panic("FIXME cannot find type")
 					}
-					spew.Dump("FIND", param.Type, selectors)
 					// if len(syms) == 0 {
 					// syms = symbolFinder{h.subPkgs}.find(append([]string{typ}, selectors[1:]...))
 					// }
