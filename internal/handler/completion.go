@@ -64,13 +64,21 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 								syms = symbolFinder{sub.Symbols}.find(append([]string{typ}, selectors[1:]...))
 							}
 						}
+
 					case *ast.InterfaceType:
+						// TODO address when len(selectors)>1
+						for _, method := range t.Methods.List {
+							syms = append(syms, gno.Symbol{
+								Name:      method.Names[0].Name,
+								Kind:      "method",
+								Doc:       method.Comment.Text(),
+								Signature: doc.Content[method.Pos()-1 : method.End()-1],
+							})
+						}
+
 					default:
 						panic("FIXME cannot find type")
 					}
-					// if len(syms) == 0 {
-					// syms = symbolFinder{h.subPkgs}.find(append([]string{typ}, selectors[1:]...))
-					// }
 
 					spew.Dump("FOUND", syms)
 					for _, f := range syms {
@@ -176,8 +184,8 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 				// lookup for symbols matching type in baseSymbols
 				return s.findIn(s.baseSymbols, append([]string{sym.Type}, selectors[1:]...))
 
-			case "struct":
-				// sym is a struct, lookup in fields
+			case "struct", "interface":
+				// sym is a struct or an interface, lookup in fields/methods
 				return s.findIn(sym.Fields, selectors[1:])
 			}
 

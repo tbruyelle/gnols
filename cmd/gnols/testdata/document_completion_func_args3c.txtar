@@ -9,9 +9,15 @@ cmpenv output/completion_x.json expected/completion_x.json
 -- x.gno --
 package foo
 
-func Hello(x interface { Foo() int }) {
-	x. // completion here, should return all methods of inline interface
+func Hello(x I) {
+	x.Foo(). // completion here, should return all fields of X
 }
+
+type X struct {
+	Bar int
+}
+
+type I interface { Foo() X }
 -- input/initialize.json --
 {
 	"rootUri": "file://$WORK"
@@ -41,17 +47,17 @@ func Hello(x interface { Foo() int }) {
 		"uri":"file://$WORK/x.gno"
 	},
 	"position": {
-		"character": 3,
+		"character": 9,
 		"line": 3 
 	}
 }
 -- expected/completion_x.json --
 [
   {
-    "detail": "Foo() int",
+    "detail": "Bar int",
     "documentation": "",
-    "insertText": "Foo",
-    "kind": 2,
-    "label": "Foo"
+    "insertText": "Bar",
+    "kind": 5,
+    "label": "Bar"
   }
 ]
