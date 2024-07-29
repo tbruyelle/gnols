@@ -1,0 +1,54 @@
+printSymbols
+cmp stdout expected.json
+-- x.gno --
+package foo
+
+// MyInterface is my interface
+type MyInterface interface {
+	OtherInterface
+	Foo() int
+}
+
+type OtherInterface interface {
+	Bar() string
+}
+-- expected.json --
+[
+  {
+    "Name": "script-parsePackages-interface",
+    "ImportPath": ".",
+    "Symbols": [
+      {
+        "Name": "MyInterface",
+        "Doc": "MyInterface is my interface",
+        "Signature": "MyInterface interface",
+        "Kind": "interface",
+        "Fields": [
+          {
+            "Name": "OtherInterface",
+            "Signature": "OtherInterface",
+            "Kind": "field",
+            "Type": "OtherInterface"
+          },
+          {
+            "Name": "Foo",
+            "Signature": "Foo() int",
+            "Kind": "method"
+          }
+        ]
+      },
+      {
+        "Name": "OtherInterface",
+        "Signature": "OtherInterface interface",
+        "Kind": "interface",
+        "Fields": [
+          {
+            "Name": "Bar",
+            "Signature": "Bar() string",
+            "Kind": "method"
+          }
+        ]
+      }
+    ]
+  }
+]

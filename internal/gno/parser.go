@@ -258,8 +258,8 @@ func variable(n *ast.ValueSpec, source string) *Symbol {
 	}
 }
 
-func fieldsFromStruct(st *ast.StructType, source string) (fields []Symbol) {
-	for _, f := range st.Fields.List {
+func symbolsFromFieldList(fl *ast.FieldList, source string) (syms []Symbol) {
+	for _, f := range fl.List {
 		typ, subfields := typeFromNode(f.Type, source)
 		var name string
 		if len(f.Names) > 0 {
@@ -268,11 +268,15 @@ func fieldsFromStruct(st *ast.StructType, source string) (fields []Symbol) {
 			// f is an embedded struct, use type name as the name.
 			name = typ
 		}
-		fields = append(fields, Symbol{
+		kind := "field"
+		if _, ok := f.Type.(*ast.FuncType); ok {
+			kind = "method"
+		}
+		syms = append(syms, Symbol{
 			Name:      name,
 			Doc:       strings.TrimSpace(f.Doc.Text()),
 			Signature: source[f.Pos()-1 : f.End()-1],
-			Kind:      "field",
+			Kind:      kind,
 			Type:      typ,
 			Fields:    subfields,
 		})
@@ -299,7 +303,9 @@ func typeFromNode(x ast.Node, source string) (string, []Symbol) {
 	case *ast.UnaryExpr:
 		return typeFromNode(x.X, source)
 	case *ast.StructType: // inline struct
-		return "", fieldsFromStruct(x, source)
+		return "", symbolsFromFieldList(x.Fields, source)
+	case *ast.InterfaceType:
+		return "", symbolsFromFieldList(x.Methods, source)
 	}
 	return "", nil
 }
