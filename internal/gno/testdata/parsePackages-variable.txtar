@@ -14,7 +14,7 @@ type MyType struct {
 
 func (MyType) F(int) bool { return false }
 
-func (otherType) f(int) bool { return false }
+func (o *otherType) f(int) bool { return false }
 
 type otherType struct {
 	X int
@@ -89,7 +89,7 @@ func Hello() {
           },
           {
             "Name": "f",
-            "Signature": "func (otherType) f(int) bool",
+            "Signature": "func (o *otherType) f(int) bool",
             "Kind": "method",
             "Recv": "otherType"
           }

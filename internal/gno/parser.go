@@ -288,6 +288,8 @@ func typeFromNode(x ast.Node, source string) (string, []Symbol) {
 	switch x := x.(type) {
 	case *ast.Ident:
 		return x.Name, nil
+	case *ast.StarExpr:
+		return typeFromNode(x.X, source)
 	case *ast.ValueSpec:
 		if x.Type != nil {
 			return typeFromNode(x.Type, source)
