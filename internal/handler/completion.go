@@ -11,6 +11,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jdkato/gnols/internal/gno"
+	"github.com/jdkato/gnols/internal/stdlib"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
 )
@@ -52,9 +53,11 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 					spew.Dump("FIND", param.Type, selectors)
 					var syms []gno.Symbol
 					switch t := param.Type.(type) {
+
 					case *ast.Ident:
 						typ := t.Name
 						syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
+
 					case *ast.SelectorExpr:
 						pkg := t.X.(*ast.Ident).Name
 						typ := t.Sel.Name
@@ -62,6 +65,16 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 						for _, sub := range h.subPkgs {
 							if sub.Name == pkg {
 								syms = symbolFinder{sub.Symbols}.find(append([]string{typ}, selectors[1:]...))
+								break
+							}
+						}
+						if len(syms) == 0 {
+							// look up in stdlib
+							for _, stdPkg := range stdlib.Packages {
+								if stdPkg.Name == pkg {
+									syms = symbolFinder{stdPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
+									break
+								}
 							}
 						}
 

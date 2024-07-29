@@ -5,12 +5,12 @@ lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 lsp textDocument/didOpen input/didOpen_x.json
 
 lsp textDocument/completion input/completion_x.json
-cmpenv output/completion_x.json expected/completion_x.json
+cmp output/completion_x.json expected/completion_x.json
 -- x.gno --
 package foo
 
 func Hello(x io.Reader) {
-	x. // completion here, should return all fields of MyType
+	x. // completion here, should return all fields of io.Reader
 }
 -- input/initialize.json --
 {
@@ -48,10 +48,10 @@ func Hello(x io.Reader) {
 -- expected/completion_x.json --
 [
   {
-    "detail": "Foo int",
+    "detail": "Read(p []byte) (n int, err error)",
     "documentation": "",
-    "insertText": "Foo",
-    "kind": 5,
-    "label": "Foo"
+    "insertText": "Read",
+    "kind": 2,
+    "label": "Read"
   }
 ]

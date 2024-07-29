@@ -5,12 +5,12 @@ lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 lsp textDocument/didOpen input/didOpen_x.json
 
 lsp textDocument/completion input/completion_x.json
-cmpenv output/completion_x.json expected/completion_x.json
+cmp output/completion_x.json expected/completion_x.json
 -- x.gno --
 package foo
 
 func Hello(x bufio.Reader) {
-	x. // completion here, should return all fields of MyType
+	x.R // completion here, should return fields that match bufio.Reader.R*
 }
 -- input/initialize.json --
 {
@@ -48,10 +48,59 @@ func Hello(x bufio.Reader) {
 -- expected/completion_x.json --
 [
   {
-    "detail": "Foo int",
-    "documentation": "",
-    "insertText": "Foo",
-    "kind": 5,
-    "label": "Foo"
+    "detail": "func (b *Reader) ReadString(delim byte) (string, error)",
+    "documentation": "ReadString reads until the first occurrence of delim in the input,\nreturning a string containing the data up to and including the delimiter.\nIf ReadString encounters an error before finding a delimiter,\nit returns the data read before the error and the error itself (often io.EOF).\nReadString returns err != nil if and only if the returned data does not end in\ndelim.\nFor simple uses, a Scanner may be more convenient.\n",
+    "insertText": "ReadString",
+    "kind": 2,
+    "label": "ReadString"
+  },
+  {
+    "detail": "func (b *Reader) ReadBytes(delim byte) ([]byte, error)",
+    "documentation": "ReadBytes reads until the first occurrence of delim in the input,\nreturning a slice containing the data up to and including the delimiter.\nIf ReadBytes encounters an error before finding a delimiter,\nit returns the data read before the error and the error itself (often io.EOF).\nReadBytes returns err != nil if and only if the returned data does not end in\ndelim.\nFor simple uses, a Scanner may be more convenient.\n",
+    "insertText": "ReadBytes",
+    "kind": 2,
+    "label": "ReadBytes"
+  },
+  {
+    "detail": "func (b *Reader) ReadLine() (line []byte, isPrefix bool, err error)",
+    "documentation": "ReadLine is a low-level line-reading primitive. Most callers should use\nReadBytes('\\n') or ReadString('\\n') instead or use a Scanner.\n\nReadLine tries to return a single line, not including the end-of-line bytes.\nIf the line was too long for the buffer then isPrefix is set and the\nbeginning of the line is returned. The rest of the line will be returned\nfrom future calls. isPrefix will be false when returning the last fragment\nof the line. The returned buffer is only valid until the next call to\nReadLine. ReadLine either returns a non-nil line or it returns an error,\nnever both.\n\nThe text returned from ReadLine does not include the line end (\"\\r\\n\" or \"\\n\").\nNo indication or error is given if the input ends without a final line end.\nCalling UnreadByte after ReadLine will always unread the last byte read\n(possibly a character belonging to the line end) even if that byte is not\npart of the line returned by ReadLine.\n",
+    "insertText": "ReadLine",
+    "kind": 2,
+    "label": "ReadLine"
+  },
+  {
+    "detail": "func (b *Reader) ReadSlice(delim byte) (line []byte, err error)",
+    "documentation": "ReadSlice reads until the first occurrence of delim in the input,\nreturning a slice pointing at the bytes in the buffer.\nThe bytes stop being valid at the next read.\nIf ReadSlice encounters an error before finding a delimiter,\nit returns all the data in the buffer and the error itself (often io.EOF).\nReadSlice fails with error ErrBufferFull if the buffer fills without a delim.\nBecause the data returned from ReadSlice will be overwritten\nby the next I/O operation, most clients should use\nReadBytes or ReadString instead.\nReadSlice returns err != nil if and only if line does not end in delim.\n",
+    "insertText": "ReadSlice",
+    "kind": 2,
+    "label": "ReadSlice"
+  },
+  {
+    "detail": "func (b *Reader) ReadRune() (r rune, size int, err error)",
+    "documentation": "ReadRune reads a single UTF-8 encoded Unicode character and returns the\nrune and its size in bytes. If the encoded rune is invalid, it consumes one byte\nand returns unicode.ReplacementChar (U+FFFD) with a size of 1.\n",
+    "insertText": "ReadRune",
+    "kind": 2,
+    "label": "ReadRune"
+  },
+  {
+    "detail": "func (b *Reader) ReadByte() (byte, error)",
+    "documentation": "ReadByte reads and returns a single byte.\nIf no byte is available, returns an error.\n",
+    "insertText": "ReadByte",
+    "kind": 2,
+    "label": "ReadByte"
+  },
+  {
+    "detail": "func (b *Reader) Read(p []byte) (n int, err error)",
+    "documentation": "Read reads data into p.\nIt returns the number of bytes read into p.\nThe bytes are taken from at most one Read on the underlying Reader,\nhence n may be less than len(p).\nTo read exactly len(p) bytes, use io.ReadFull(b, p).\nAt EOF, the count will be zero and err will be io.EOF.\n",
+    "insertText": "Read",
+    "kind": 2,
+    "label": "Read"
+  },
+  {
+    "detail": "func (b *Reader) Reset(r io.Reader)",
+    "documentation": "Reset discards any buffered data, resets all state, and switches\nthe buffered reader to read from r.\n",
+    "insertText": "Reset",
+    "kind": 2,
+    "label": "Reset"
   }
 ]
