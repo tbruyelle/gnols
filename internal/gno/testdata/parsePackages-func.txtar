@@ -1,0 +1,22 @@
+printSymbols
+cmp stdout expected.json
+-- x.gno --
+package foo
+
+func f(x int, y interface{ Foo() int }) bool {
+	return true
+}
+-- expected.json --
+[
+  {
+    "Name": "script-parsePackages-func",
+    "ImportPath": ".",
+    "Symbols": [
+      {
+        "Name": "f",
+        "Signature": "func f(x int, y interface{ Foo() int }) bool",
+        "Kind": "func"
+      }
+    ]
+  }
+]
