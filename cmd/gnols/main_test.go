@@ -30,6 +30,7 @@ func (b buffer) Close() error {
 
 func TestScripts(t *testing.T) {
 	testscript.Run(t, testscript.Params{
+		UpdateScripts: os.Getenv("TXTAR_UPDATE") != "",
 		Setup: func(env *testscript.Env) error {
 			var (
 				clientRead, serverWrite = io.Pipe()
