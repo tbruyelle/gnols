@@ -44,7 +44,7 @@ func   Hello(){
 -- expected/formatting.json --
 [
   {
-    "newText": "package foo\n\nimport \"gno.land/p/demo/ufmt\"\n\nfunc Hello() {\n\tufmt.Sprintf()\n}\n\n",
+    "newText": "package foo\n\nimport \"gno.land/p/demo/ufmt\"\n\nfunc Hello() {\n\tufmt.Sprintf()\n}\n",
     "range": {
       "end": {
         "character": 0,
