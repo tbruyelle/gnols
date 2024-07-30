@@ -123,32 +123,31 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 				})
 			}
 		} else {
-			//-----------------------------------------
-			// Look up stdlib
-			if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
-				for _, s := range pkg.Symbols {
-					if s.Recv != "" {
-						// skip symbols with receiver (methods)
-						continue
-					}
-					if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
-						// TODO handle multiple selectors? (possible if for example a global
-						// var is defined in the pkg, and the user is referrencing it.)
-
-						// skip symbols that doesn't match the prefix
-						continue
-					}
-					items = append(items, protocol.CompletionItem{
-						Label:         s.Name,
-						InsertText:    s.Name,
-						Kind:          symbolToKind(s.Kind),
-						Detail:        s.Signature,
-						Documentation: s.Doc,
-					})
-				}
-			}
-		}
 	*/
+	//-----------------------------------------
+	// Look up stdlib
+	if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
+		for _, s := range pkg.Symbols {
+			if s.Recv != "" {
+				// skip symbols with receiver (methods)
+				continue
+			}
+			if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
+				// TODO handle multiple selectors? (possible if for example a global
+				// var is defined in the pkg, and the user is referrencing it.)
+
+				// skip symbols that doesn't match the prefix
+				continue
+			}
+			items = append(items, protocol.CompletionItem{
+				Label:         s.Name,
+				InsertText:    s.Name,
+				Kind:          symbolToKind(s.Kind),
+				Detail:        s.Signature,
+				Documentation: s.Doc,
+			})
+		}
+	}
 	return reply(ctx, items, nil)
 }
 
