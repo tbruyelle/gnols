@@ -45,13 +45,36 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	nodes, _ := astutil.PathEnclosingInterval(doc.Pgf.File, pos, pos)
 	spew.Dump("ENCLOSING NODES", nodes)
 	for _, n := range nodes {
+		var syms []gno.Symbol
 		switch n := n.(type) {
+
+		case *ast.SelectorExpr:
+			if id, ok := n.X.(*ast.Ident); ok {
+				// look up in subpackages (TODO also add imported packages)
+				pkg := id.Name
+				// look up pkg in subpkgs
+				for _, sub := range h.subPkgs {
+					if sub.Name == pkg {
+						syms = symbolFinder{sub.Symbols}.find(selectors[1:])
+						break
+					}
+				}
+				if len(syms) == 0 {
+					// look up in stdlib
+					for _, stdPkg := range stdlib.Packages {
+						if stdPkg.Name == pkg {
+							syms = symbolFinder{stdPkg.Symbols}.find(selectors[1:])
+							break
+						}
+					}
+				}
+			}
+
 		case *ast.FuncDecl:
 			for _, param := range n.Type.Params.List {
 				if param.Names[0].Name == selectors[0] {
 					// match, find corresponding type
 					spew.Dump("FIND", param.Type, selectors)
-					var syms []gno.Symbol
 					switch t := param.Type.(type) {
 
 					case *ast.Ident:
@@ -92,27 +115,12 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 					default:
 						panic("FIXME cannot find type")
 					}
-
-					spew.Dump("FOUND", syms)
-					for _, f := range syms {
-						items = append(items, protocol.CompletionItem{
-							Label:         f.Name,
-							InsertText:    f.Name,
-							Kind:          symbolToKind(f.Kind),
-							Detail:        f.Signature,
-							Documentation: f.Doc,
-						})
-					}
-					return reply(ctx, items, nil)
 				}
 			}
 		}
-	}
 
-	/*
-		//-----------------------------------------
-		// Look up local symbols
-		if syms := h.lookupSymbols(selectors); len(syms) > 0 {
+		if len(syms) > 0 {
+			spew.Dump("FOUND", syms)
 			for _, f := range syms {
 				items = append(items, protocol.CompletionItem{
 					Label:         f.Name,
@@ -122,32 +130,49 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 					Documentation: f.Doc,
 				})
 			}
-		} else {
-	*/
-	//-----------------------------------------
-	// Look up stdlib
-	if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
-		for _, s := range pkg.Symbols {
-			if s.Recv != "" {
-				// skip symbols with receiver (methods)
-				continue
-			}
-			if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
-				// TODO handle multiple selectors? (possible if for example a global
-				// var is defined in the pkg, and the user is referrencing it.)
-
-				// skip symbols that doesn't match the prefix
-				continue
-			}
-			items = append(items, protocol.CompletionItem{
-				Label:         s.Name,
-				InsertText:    s.Name,
-				Kind:          symbolToKind(s.Kind),
-				Detail:        s.Signature,
-				Documentation: s.Doc,
-			})
+			break
 		}
 	}
+
+	/*
+			//-----------------------------------------
+			// Look up local symbols
+			if syms := h.lookupSymbols(selectors); len(syms) > 0 {
+				for _, f := range syms {
+					items = append(items, protocol.CompletionItem{
+						Label:         f.Name,
+						InsertText:    f.Name,
+						Kind:          symbolToKind(f.Kind),
+						Detail:        f.Signature,
+						Documentation: f.Doc,
+					})
+				}
+			} else {
+		//-----------------------------------------
+		// Look up stdlib
+		if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
+			for _, s := range pkg.Symbols {
+				if s.Recv != "" {
+					// skip symbols with receiver (methods)
+					continue
+				}
+				if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
+					// TODO handle multiple selectors? (possible if for example a global
+					// var is defined in the pkg, and the user is referrencing it.)
+
+					// skip symbols that doesn't match the prefix
+					continue
+				}
+				items = append(items, protocol.CompletionItem{
+					Label:         s.Name,
+					InsertText:    s.Name,
+					Kind:          symbolToKind(s.Kind),
+					Detail:        s.Signature,
+					Documentation: s.Doc,
+				})
+			}
+		}
+	*/
 	return reply(ctx, items, nil)
 }
 
