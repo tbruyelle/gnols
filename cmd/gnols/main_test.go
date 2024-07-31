@@ -132,12 +132,7 @@ func call(ts *testscript.TestScript, method string, paramFile string) {
 	)
 	_, err := conn.Call(context.Background(), method, params, &response)
 	if err != nil {
-		if jerr, ok := err.(*jsonrpc2.Error); ok { //nolint:errorlint
-			// output jsonrpc2.Error in json
-			response = map[string]any{"error": jerr}
-		} else {
-			ts.Fatalf("Error Call: %v", err)
-		}
+		response = map[string]any{"error": err}
 	}
 	if err := writeJSON(ts, filepath.Base(paramFile), response); err != nil {
 		ts.Fatalf("writeJSON: %v", err)

@@ -35,7 +35,7 @@ func ParsePackages(wd, rootDir string) ([]Package, error) {
 	if err != nil {
 		return nil, err
 	}
-	var pkgs []Package
+	pkgs := []Package{}
 	for _, dir := range dirs {
 		files, err := getFiles(dir)
 		if err != nil {

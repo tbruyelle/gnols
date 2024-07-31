@@ -43,9 +43,33 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	pos := gotoken.Pos(doc.PositionToOffset(params.Position))
 	nodes, _ := astutil.PathEnclosingInterval(doc.Pgf.File, pos, pos)
 	spew.Dump("ENCLOSING NODES", nodes)
+	// TODO use this func in other places (check for ast.Ident usage)
+	nodeName := func(n ast.Node) string {
+		if id, ok := n.(*ast.Ident); ok {
+			return id.Name
+		}
+		return ""
+	}
 	for _, n := range nodes {
 		var syms []gno.Symbol
 		switch n := n.(type) {
+
+		case *ast.BlockStmt:
+			// Check if selectors[0] has been assigned here
+			for _, t := range n.List {
+				switch t := t.(type) {
+				case *ast.AssignStmt:
+					if nodeName(t.Lhs[0]) == selectors[0] && t.Tok == gotoken.DEFINE {
+						// found selectors[0] assignment, now fetch type
+						if cl, ok := t.Rhs[0].(*ast.CompositeLit); ok {
+							typ := nodeName(cl.Type)
+							// FIXME typ can come from an other package
+							syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
+							break
+						}
+					}
+				}
+			}
 
 		case *ast.SelectorExpr:
 			if id, ok := n.X.(*ast.Ident); ok {
@@ -116,6 +140,42 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 					}
 				}
 			}
+
+		case *ast.File:
+			// final node, check for global variable declaration that could match
+			// selectors[0]
+			for _, t := range n.Decls {
+				if len(syms) > 0 {
+					break
+				}
+				if d, ok := t.(*ast.GenDecl); ok {
+					for _, t := range d.Specs {
+						if v, ok := t.(*ast.ValueSpec); ok {
+							// FIXME loop over all names in case there's multiple assignement
+							if v.Names[0].Name == selectors[0] {
+								if len(v.Values) > 0 {
+									switch vs := v.Values[0].(type) {
+									case *ast.CompositeLit:
+										typ := nodeName(vs.Type)
+										syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
+									}
+								} else {
+									// TODO address when len(selectors)>1
+									for _, field := range v.Type.(*ast.StructType).Fields.List {
+										syms = append(syms, gno.Symbol{
+											Name:      field.Names[0].Name,
+											Kind:      "field",
+											Doc:       strings.TrimSpace(field.Doc.Text()),
+											Signature: doc.Content[field.Pos()-1 : field.End()-1],
+										})
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 		}
 
 		if len(syms) > 0 {
