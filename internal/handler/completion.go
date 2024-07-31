@@ -7,13 +7,12 @@ import (
 	"log/slog"
 	"strings"
 
-	"golang.org/x/tools/go/ast/astutil"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jdkato/gnols/internal/gno"
 	"github.com/jdkato/gnols/internal/stdlib"
 	"go.lsp.dev/jsonrpc2"
 	"go.lsp.dev/protocol"
+	"golang.org/x/tools/go/ast/astutil"
 )
 
 func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
@@ -135,41 +134,42 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	}
 
 	/*
+		//-----------------------------------------
+		// Look up local symbols
+		if syms := h.lookupSymbols(selectors); len(syms) > 0 {
+			for _, f := range syms {
+				items = append(items, protocol.CompletionItem{
+					Label:         f.Name,
+					InsertText:    f.Name,
+					Kind:          symbolToKind(f.Kind),
+					Detail:        f.Signature,
+					Documentation: f.Doc,
+				})
+			}
+		} else {
 			//-----------------------------------------
-			// Look up local symbols
-			if syms := h.lookupSymbols(selectors); len(syms) > 0 {
-				for _, f := range syms {
+			// Look up stdlib
+			if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
+				for _, s := range pkg.Symbols {
+					if s.Recv != "" {
+						// skip symbols with receiver (methods)
+						continue
+					}
+					if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
+						// TODO handle multiple selectors? (possible if for example a global
+						// var is defined in the pkg, and the user is referrencing it.)
+
+						// skip symbols that doesn't match the prefix
+						continue
+					}
 					items = append(items, protocol.CompletionItem{
-						Label:         f.Name,
-						InsertText:    f.Name,
-						Kind:          symbolToKind(f.Kind),
-						Detail:        f.Signature,
-						Documentation: f.Doc,
+						Label:         s.Name,
+						InsertText:    s.Name,
+						Kind:          symbolToKind(s.Kind),
+						Detail:        s.Signature,
+						Documentation: s.Doc,
 					})
 				}
-			} else {
-		//-----------------------------------------
-		// Look up stdlib
-		if pkg := lookupPkg(stdlib.Packages, selectors[0]); pkg != nil {
-			for _, s := range pkg.Symbols {
-				if s.Recv != "" {
-					// skip symbols with receiver (methods)
-					continue
-				}
-				if len(selectors) > 1 && !strings.HasPrefix(s.Name, selectors[1]) {
-					// TODO handle multiple selectors? (possible if for example a global
-					// var is defined in the pkg, and the user is referrencing it.)
-
-					// skip symbols that doesn't match the prefix
-					continue
-				}
-				items = append(items, protocol.CompletionItem{
-					Label:         s.Name,
-					InsertText:    s.Name,
-					Kind:          symbolToKind(s.Kind),
-					Detail:        s.Signature,
-					Documentation: s.Doc,
-				})
 			}
 		}
 	*/
