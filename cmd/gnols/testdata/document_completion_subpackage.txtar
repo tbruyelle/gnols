@@ -5,7 +5,7 @@ lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 lsp textDocument/didOpen input/didOpen_x.json
 
 lsp textDocument/completion input/completion.json
-cmpenv output/completion.json expected/completion.json
+cmp output/completion.json expected/completion.json
 -- x.gno --
 package foo
 

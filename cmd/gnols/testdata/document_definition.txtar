@@ -11,7 +11,6 @@ cmpenv output/definition_x_3_5.json expected/definition_x_3_5.json
 # definition in an other file
 lsp textDocument/definition input/definition_x_4_2.json
 cmpenv output/definition_x_4_2.json expected/definition_x_4_2.json
-
 -- x.gno --
 package foo
 

@@ -5,11 +5,11 @@ lsp workspace/didChangeConfiguration input/didChangeConfiguration.json
 lsp textDocument/didOpen input/didOpen_x.json
 
 lsp textDocument/formatting input/formatting.json
-cmpenv output/formatting.json expected/formatting.json
+cmp output/formatting.json expected/formatting.json
 -- x.gno --
 package foo
 
-func   Hello(){
+func Hello() {
 	ufmt.Sprintf()
 }
 -- input/initialize.json --
