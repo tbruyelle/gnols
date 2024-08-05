@@ -130,7 +130,7 @@ func (m *BinManager) Transpile() ([]byte, error) {
 	// FIXME(tb): See https://github.com/gnolang/gno/pull/1695/files#r1697255524
 	const disableGoMod = "GO111MODULE=off"
 	cmd.Env = append(os.Environ(), disableGoMod)
-	bz, err := cmd.CombinedOutput() //nolint:gosec
+	bz, err := cmd.CombinedOutput()
 	if err != nil {
 		return bz, fmt.Errorf("running '%s %s': %w: %s", m.gno, strings.Join(args, " "), err, string(bz))
 	}

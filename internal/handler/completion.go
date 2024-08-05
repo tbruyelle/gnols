@@ -53,7 +53,6 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	for _, n := range nodes {
 		var syms []gno.Symbol
 		switch n := n.(type) {
-
 		case *ast.BlockStmt:
 			// Check if selectors[0] has been assigned here
 			for _, t := range n.List {
@@ -99,7 +98,6 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 					// match, find corresponding type
 					spew.Dump("FIND", param.Type, selectors)
 					switch t := param.Type.(type) {
-
 					case *ast.Ident:
 						typ := t.Name
 						syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
@@ -175,7 +173,6 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 					}
 				}
 			}
-
 		}
 
 		if len(syms) > 0 {
@@ -236,6 +233,9 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	return reply(ctx, items, nil)
 }
 
+/* TODO remove me when astutil.PathEnclosingInterval is proven to be the
+ best way to perform code completion
+
 func (h handler) lookupSymbols(selectors []string) []gno.Symbol {
 	// Check first in current pkg
 	found := symbolFinder{h.currentPkg.Symbols}.find(selectors)
@@ -251,6 +251,7 @@ func (h handler) lookupSymbols(selectors []string) []gno.Symbol {
 	// TODO check in imported packages of the file
 	return []gno.Symbol{}
 }
+*/
 
 type symbolFinder struct {
 	baseSymbols []gno.Symbol
