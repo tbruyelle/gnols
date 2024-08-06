@@ -43,13 +43,7 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	pos := gotoken.Pos(doc.PositionToOffset(params.Position))
 	nodes, _ := astutil.PathEnclosingInterval(doc.Pgf.File, pos, pos)
 	spew.Dump("ENCLOSING NODES", nodes)
-	// TODO use this func in other places (check for ast.Ident usage)
-	nodeName := func(n ast.Node) string {
-		if id, ok := n.(*ast.Ident); ok {
-			return id.Name
-		}
-		return ""
-	}
+
 	for _, n := range nodes {
 		var syms []gno.Symbol
 		switch n := n.(type) {
@@ -71,9 +65,8 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 			}
 
 		case *ast.SelectorExpr:
-			if id, ok := n.X.(*ast.Ident); ok {
-				// look up in subpackages (TODO also add imported packages)
-				pkg := id.Name
+			// look up in subpackages (TODO also add imported packages)
+			if pkg := nodeName(n.X); pkg != "" {
 				// look up pkg in subpkgs
 				for _, sub := range h.subPkgs {
 					if sub.Name == pkg {
@@ -292,4 +285,11 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 		}
 	}
 	return syms
+}
+
+func nodeName(n ast.Node) string {
+	if id, ok := n.(*ast.Ident); ok {
+		return id.Name
+	}
+	return ""
 }
