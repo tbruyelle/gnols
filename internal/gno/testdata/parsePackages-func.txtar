@@ -6,6 +6,19 @@ package foo
 func f(x int, y interface{ Foo() int }) bool {
 	return true
 }
+
+func g() {
+}
+
+func h() (bool, error) {
+	return true, nil
+}
+
+type x struct{}
+
+func i() x {
+	return x{}
+}
 -- expected.json --
 [
   {
@@ -15,7 +28,29 @@ func f(x int, y interface{ Foo() int }) bool {
       {
         "Name": "f",
         "Signature": "func f(x int, y interface{ Foo() int }) bool",
+        "Kind": "func",
+        "Type": "bool"
+      },
+      {
+        "Name": "g",
+        "Signature": "func g()",
         "Kind": "func"
+      },
+      {
+        "Name": "h",
+        "Signature": "func h() (bool, error)",
+        "Kind": "func"
+      },
+      {
+        "Name": "x",
+        "Signature": "x struct{}",
+        "Kind": "struct"
+      },
+      {
+        "Name": "i",
+        "Signature": "func i() x",
+        "Kind": "func",
+        "Type": "x"
       }
     ]
   }
