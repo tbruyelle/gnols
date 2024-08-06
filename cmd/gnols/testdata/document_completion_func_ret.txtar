@@ -15,10 +15,10 @@ type MyType struct {
 	Baz bool
 }
 
-func Bar() MyType {}
+func NewMyType() MyType {}
 
 func Hello() {
-	Bar().B // completion here, should return some fields of MyType
+	NewMyType().B // completion here, should return some fields of MyType
 }
 -- input/initialize.json --
 {
@@ -49,14 +49,14 @@ func Hello() {
 		"uri":"file://$WORK/x.gno"
 	},
 	"position": {
-		"character": 7,
+		"character": 14,
 		"line": 11
 	}
 }
 -- expected/completion_x.json --
 [
   {
-    "detail": "Bar int",
+    "detail": "Bar string",
     "documentation": "",
     "insertText": "Bar",
     "kind": 5,

@@ -65,8 +65,10 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 			}
 
 		case *ast.SelectorExpr:
-			// look up in subpackages (TODO also add imported packages)
-			if pkg := nodeName(n.X); pkg != "" {
+			switch x := n.X.(type) {
+			case *ast.Ident:
+				// look up in subpackages (TODO also add imported packages)
+				pkg := x.Name
 				// look up pkg in subpkgs
 				for _, sub := range h.subPkgs {
 					if sub.Name == pkg {
@@ -83,6 +85,10 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 						}
 					}
 				}
+
+			case *ast.CallExpr:
+				// this a call, find return type
+				syms = symbolFinder{h.currentPkg.Symbols}.find(selectors)
 			}
 
 		case *ast.FuncDecl:
@@ -260,6 +266,7 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 		return symbols
 	}
 	name := selectors[0]
+	name = strings.TrimSuffix(name, "()") // TODO add case like func_ret with func arguementsj
 	var syms []gno.Symbol
 	for _, sym := range symbols {
 		switch {
@@ -270,6 +277,7 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 			case "var", "field":
 				if sym.Type == "" {
 					// sym is an inline struct, returns fields
+					// TODO ensure that works when there's still other selectors
 					return sym.Fields
 				}
 				// lookup for symbols matching type in baseSymbols
@@ -278,6 +286,12 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 			case "struct", "interface":
 				// sym is a struct or an interface, lookup in fields/methods
 				return s.findIn(sym.Fields, selectors[1:])
+
+			case "func":
+				if sym.Type != "" {
+					return s.findIn(s.baseSymbols, append([]string{sym.Type}, selectors[1:]...))
+				}
+
 			}
 
 		case strings.HasPrefix(sym.Name, name): // partial match
