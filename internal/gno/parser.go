@@ -226,15 +226,13 @@ func function(n *ast.FuncDecl, source string) *Symbol {
 	} else {
 		kind = "func"
 	}
-	if n.Type.Results != nil && len(n.Type.Results.List) == 1 {
-		// Store retType only if there's only one
-		retType = n.Type.Results.List[0].Type.(*ast.Ident).Name
-	}
+	retType, params := typeFromNode(n.Type, source)
 	return &Symbol{
 		Name:      n.Name.Name,
 		Doc:       n.Doc.Text(),
 		Signature: strings.Split(source[n.Pos()-1:n.End()-1], " {")[0],
 		Kind:      kind,
+		Fields:    params,
 		Recv:      recv,
 		Type:      retType,
 	}
@@ -311,6 +309,13 @@ func typeFromNode(x ast.Node, source string) (string, []Symbol) {
 		return typeFromNode(x.X, source)
 	case *ast.StructType: // inline struct
 		return "", symbolsFromFieldList(x.Fields, source)
+	case *ast.FuncType:
+		var retType string
+		if x.Results != nil && len(x.Results.List) == 1 {
+			// Store retType only if there's only one
+			retType = x.Results.List[0].Type.(*ast.Ident).Name
+		}
+		return retType, symbolsFromFieldList(x.Params, source)
 	case *ast.InterfaceType:
 		return "", symbolsFromFieldList(x.Methods, source)
 	}

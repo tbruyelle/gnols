@@ -29,6 +29,27 @@ func i() x {
         "Name": "f",
         "Signature": "func f(x int, y interface{ Foo() int }) bool",
         "Kind": "func",
+        "Fields": [
+          {
+            "Name": "x",
+            "Signature": "x int",
+            "Kind": "field",
+            "Type": "int"
+          },
+          {
+            "Name": "y",
+            "Signature": "y interface{ Foo() int }",
+            "Kind": "field",
+            "Fields": [
+              {
+                "Name": "Foo",
+                "Signature": "Foo() int",
+                "Kind": "method",
+                "Type": "int"
+              }
+            ]
+          }
+        ],
         "Type": "bool"
       },
       {

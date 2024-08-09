@@ -12,7 +12,7 @@ type MyType struct {
 	d int
 }
 
-func (MyType) F(int) bool { return false }
+func (MyType) F(i int) bool { return false }
 
 func (o *otherType) f(int) bool { return false }
 
@@ -70,9 +70,17 @@ func Hello() {
           },
           {
             "Name": "F",
-            "Signature": "func (MyType) F(int) bool",
+            "Signature": "func (MyType) F(i int) bool",
             "Kind": "method",
             "Recv": "MyType",
+            "Fields": [
+              {
+                "Name": "i",
+                "Signature": "i int",
+                "Kind": "field",
+                "Type": "int"
+              }
+            ],
             "Type": "bool"
           }
         ]
@@ -93,6 +101,14 @@ func Hello() {
             "Signature": "func (o *otherType) f(int) bool",
             "Kind": "method",
             "Recv": "otherType",
+            "Fields": [
+              {
+                "Name": "int",
+                "Signature": "int",
+                "Kind": "field",
+                "Type": "int"
+              }
+            ],
             "Type": "bool"
           }
         ]

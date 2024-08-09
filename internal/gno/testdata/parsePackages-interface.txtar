@@ -69,6 +69,14 @@ var x interface{ Baz(int) bool }
             "Name": "Baz",
             "Signature": "Baz(int) bool",
             "Kind": "method",
+            "Fields": [
+              {
+                "Name": "int",
+                "Signature": "int",
+                "Kind": "field",
+                "Type": "int"
+              }
+            ],
             "Type": "bool"
           }
         ]
