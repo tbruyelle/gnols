@@ -10,8 +10,10 @@ type MyInterface interface {
 }
 
 type OtherInterface interface {
-	Bar() string
+	Bar() MyType
 }
+
+type MyType struct{}
 
 var x interface{ Baz(int) bool }
 -- expected.json --
@@ -35,7 +37,8 @@ var x interface{ Baz(int) bool }
           {
             "Name": "Foo",
             "Signature": "Foo() int",
-            "Kind": "method"
+            "Kind": "method",
+            "Type": "int"
           }
         ]
       },
@@ -46,10 +49,16 @@ var x interface{ Baz(int) bool }
         "Fields": [
           {
             "Name": "Bar",
-            "Signature": "Bar() string",
-            "Kind": "method"
+            "Signature": "Bar() MyType",
+            "Kind": "method",
+            "Type": "MyType"
           }
         ]
+      },
+      {
+        "Name": "MyType",
+        "Signature": "MyType struct{}",
+        "Kind": "struct"
       },
       {
         "Name": "x",
@@ -59,7 +68,8 @@ var x interface{ Baz(int) bool }
           {
             "Name": "Baz",
             "Signature": "Baz(int) bool",
-            "Kind": "method"
+            "Kind": "method",
+            "Type": "bool"
           }
         ]
       }
