@@ -287,7 +287,7 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 				// sym is a struct or an interface, lookup in fields/methods
 				return s.findIn(sym.Fields, selectors[1:])
 
-			case "func":
+			case "func", "method":
 				if sym.Type != "" {
 					return s.findIn(s.baseSymbols, append([]string{sym.Type}, selectors[1:]...))
 				}
