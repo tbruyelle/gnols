@@ -47,6 +47,10 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 	for _, n := range nodes {
 		var syms []gno.Symbol
 		switch n := n.(type) {
+		case *ast.Ident:
+			// TODO check if it works when multiple selectors
+			syms = symbolFinder{h.currentPkg.Symbols}.find([]string{n.Name})
+
 		case *ast.BlockStmt:
 			// Check if selectors[0] has been assigned here
 			for _, t := range n.List {
@@ -88,6 +92,9 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 
 			case *ast.CallExpr:
 				// this a call, find return type
+				// TODO try to replace selectors with the func name without the ()
+				// so we dont need to remove them in symbolFinder
+				// See if it works with multiple selectors.
 				syms = symbolFinder{h.currentPkg.Symbols}.find(selectors)
 			}
 

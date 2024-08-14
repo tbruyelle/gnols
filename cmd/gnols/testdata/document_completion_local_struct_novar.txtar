@@ -1,4 +1,3 @@
-skip # for now and maybe forever
 # Init phase
 lsp initialize input/initialize.json
 lsp initialized input/initialized.json
