@@ -191,10 +191,10 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 							// FIXME loop over all names in case there's multiple assignement
 							if v.Names[0].Name == selectors[0] {
 								if len(v.Values) > 0 {
-									// related test-cases:
-									// - TestScripts/document_completion_local_struct_global_var
-									switch vs := v.Values[0].(type) {
+									switch vs := v.Values[0].(type) { //nolint:gocritic
 									case *ast.CompositeLit:
+										// related test-cases:
+										// - TestScripts/document_completion_local_struct_global_var
 										typ := nodeName(vs.Type)
 										syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
 									}
