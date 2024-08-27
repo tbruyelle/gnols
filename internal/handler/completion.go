@@ -298,7 +298,6 @@ func (s symbolFinder) findIn(symbols []gno.Symbol, selectors []string) []gno.Sym
 				if sym.Type != "" {
 					return s.findIn(s.baseSymbols, append([]string{sym.Type}, selectors[1:]...))
 				}
-
 			}
 
 		case strings.HasPrefix(sym.Name, name): // partial match

@@ -126,7 +126,7 @@ func (m *BinManager) Transpile() ([]byte, error) {
 	if m.shouldBuild {
 		args = append(args, "-gobuild")
 	}
-	cmd := exec.Command(m.gno, args...)
+	cmd := exec.Command(m.gno, args...) //nolint:gosec
 	// FIXME(tb): See https://github.com/gnolang/gno/pull/1695/files#r1697255524
 	const disableGoMod = "GO111MODULE=off"
 	cmd.Env = append(os.Environ(), disableGoMod)
