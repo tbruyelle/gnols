@@ -48,10 +48,20 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 		var syms []gno.Symbol
 		switch n := n.(type) {
 		case *ast.Ident:
+			// related test-cases:
+			// - TestScripts/document_completion_local_struct_novar
+
 			// TODO check if it works when multiple selectors
 			syms = symbolFinder{h.currentPkg.Symbols}.find([]string{n.Name})
 
 		case *ast.BlockStmt:
+			// related test-cases:
+			// - TestScripts/document_completion_local_struct
+			// - TestScripts/document_completion_local_struct_one_selector
+			// - TestScripts/document_completion_local_struct_two_selectors
+			// - TestScripts/document_completion_local_struct_three_selectors_inline
+			// - TestScripts/document_completion_local_struct_three_selectors
+
 			// Check if selectors[0] has been assigned here
 			for _, t := range n.List {
 				switch t := t.(type) {
@@ -71,6 +81,13 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 		case *ast.SelectorExpr:
 			switch x := n.X.(type) {
 			case *ast.Ident:
+				// related test-cases:
+				// - TestScripts/document_completion_subpackage
+				// - TestScripts/document_completion_examples_ufmt
+				// - TestScripts/document_completion_stdlib_bufio
+				// - TestScripts/document_completion_subpackage_multiple_selectors
+				// - TestScripts/document_completion_stdlib_strconv
+
 				// look up in subpackages (TODO also add imported packages)
 				pkg := x.Name
 				// look up pkg in subpkgs
@@ -91,6 +108,9 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 				}
 
 			case *ast.CallExpr:
+				// related test-cases:
+				// - TestScripts/document_completion_func_ret
+
 				// this a call, find return type
 				// TODO try to replace selectors with the func name without the ()
 				// so we dont need to remove them in symbolFinder
@@ -102,13 +122,23 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 			for _, param := range n.Type.Params.List {
 				if param.Names[0].Name == selectors[0] {
 					// match, find corresponding type
-					spew.Dump("FIND", param.Type, selectors)
 					switch t := param.Type.(type) {
 					case *ast.Ident:
+						// related test-cases:
+						// - TestScripts/document_completion_func_args
+						// - TestScripts/document_completion_func_args3c
+						// - TestScripts/document_completion_func_args3b
+						// - TestScripts/document_completion_func_args6
+
 						typ := t.Name
 						syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
 
 					case *ast.SelectorExpr:
+						// related test-cases:
+						// - TestScripts/document_completion_func_args2
+						// - TestScripts/document_completion_func_args4
+						// - TestScripts/document_completion_func_args5
+
 						pkg := t.X.(*ast.Ident).Name
 						typ := t.Sel.Name
 						// look up pkg in subpkgs
@@ -129,6 +159,9 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 						}
 
 					case *ast.InterfaceType:
+						// related test-cases:
+						// - TestScripts/document_completion_func_args3
+
 						// TODO address when len(selectors)>1
 						for _, method := range t.Methods.List {
 							syms = append(syms, gno.Symbol{
@@ -158,12 +191,16 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 							// FIXME loop over all names in case there's multiple assignement
 							if v.Names[0].Name == selectors[0] {
 								if len(v.Values) > 0 {
+									// related test-cases:
+									// - TestScripts/document_completion_local_struct_global_var
 									switch vs := v.Values[0].(type) {
 									case *ast.CompositeLit:
 										typ := nodeName(vs.Type)
 										syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
 									}
 								} else {
+									// related test-cases:
+									// - TestScripts/document_completion_local_inline_struct
 									// TODO address when len(selectors)>1
 									for _, field := range v.Type.(*ast.StructType).Fields.List {
 										syms = append(syms, gno.Symbol{
