@@ -24,3 +24,6 @@ gob:
 
 json:
 	go run cmd/gen/main.go --root-dir "/Users/jdkato/Documents/Code/Gno/gno" --format json
+
+lint:
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.59.1 run ./...
