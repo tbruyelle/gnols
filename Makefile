@@ -13,7 +13,7 @@ release:
 	git push origin $(tag)
 
 deps:
-	go install golang.org/x/tools/gopls@v0.15.3
+	go install golang.org/x/tools/gopls@v0.16.2
 	go install github.com/gnolang/gno/gnovm/cmd/gno@master
 
 build:
