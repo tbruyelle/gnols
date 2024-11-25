@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -439,5 +440,10 @@ func (m *BinManager) Rename(ctx context.Context, file uri.URI, line, col uint32,
 		}
 		docEdits = append(docEdits, docEdit)
 	}
+	// gnols returns edits in inconsistent order, while this has no impact on LSP
+	// functionnality, it is better to have consistent order for testing.
+	sort.Slice(docEdits, func(i, j int) bool {
+		return docEdits[i].URI.Filename() < docEdits[j].URI.Filename()
+	})
 	return docEdits, nil
 }

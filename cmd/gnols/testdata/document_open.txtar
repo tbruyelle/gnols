@@ -103,7 +103,7 @@ func Bye() {
         "severity": 1,
         "code": "transpile",
         "source": "gnols",
-        "message": " y declared and not used"
+        "message": " declared and not used: y"
       }
     ]
   }
