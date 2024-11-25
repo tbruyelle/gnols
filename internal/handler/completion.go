@@ -49,18 +49,18 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 		switch n := n.(type) {
 		case *ast.Ident:
 			// related test-cases:
-			// - TestScripts/document_completion_local_struct_novar
+			// - cmd/gnols/testdata/document_completion_local_struct_novar.txtar
 
 			// TODO check if it works when multiple selectors
 			syms = symbolFinder{h.currentPkg.Symbols}.find([]string{n.Name})
 
 		case *ast.BlockStmt:
 			// related test-cases:
-			// - TestScripts/document_completion_local_struct
-			// - TestScripts/document_completion_local_struct_one_selector
-			// - TestScripts/document_completion_local_struct_two_selectors
-			// - TestScripts/document_completion_local_struct_three_selectors_inline
-			// - TestScripts/document_completion_local_struct_three_selectors
+			// - cmd/gnols/testdata/document_completion_local_struct.txtar
+			// - cmd/gnols/testdata/document_completion_local_struct_one_selector.txtar
+			// - cmd/gnols/testdata/document_completion_local_struct_two_selectors.txtar
+			// - cmd/gnols/testdata/document_completion_local_struct_three_selectors_inline.txtar
+			// - cmd/gnols/testdata/document_completion_local_struct_three_selectors.txtar
 
 			// Check if selectors[0] has been assigned here
 			for _, t := range n.List {
@@ -82,11 +82,11 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 			switch x := n.X.(type) {
 			case *ast.Ident:
 				// related test-cases:
-				// - TestScripts/document_completion_subpackage
-				// - TestScripts/document_completion_examples_ufmt
-				// - TestScripts/document_completion_stdlib_bufio
-				// - TestScripts/document_completion_subpackage_multiple_selectors
-				// - TestScripts/document_completion_stdlib_strconv
+				// - cmd/gnols/testdata/document_completion_subpackage.txtar
+				// - cmd/gnols/testdata/document_completion_examples_ufmt.txtar
+				// - cmd/gnols/testdata/document_completion_stdlib_bufio.txtar
+				// - cmd/gnols/testdata/document_completion_subpackage_multiple_selectors.txtar
+				// - cmd/gnols/testdata/document_completion_stdlib_strconv.txtar
 
 				// look up in subpackages (TODO also add imported packages)
 				pkg := x.Name
@@ -109,7 +109,7 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 
 			case *ast.CallExpr:
 				// related test-cases:
-				// - TestScripts/document_completion_func_ret
+				// - cmd/gnols/testdata/document_completion_func_ret.txtar
 
 				// this a call, find return type
 				// TODO try to replace selectors with the func name without the ()
@@ -125,19 +125,19 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 					switch t := param.Type.(type) {
 					case *ast.Ident:
 						// related test-cases:
-						// - TestScripts/document_completion_func_args
-						// - TestScripts/document_completion_func_args3c
-						// - TestScripts/document_completion_func_args3b
-						// - TestScripts/document_completion_func_args6
+						// - cmd/gnols/testdata/document_completion_func_args.txtar
+						// - cmd/gnols/testdata/document_completion_func_args3c.txtar
+						// - cmd/gnols/testdata/document_completion_func_args3b.txtar
+						// - cmd/gnols/testdata/document_completion_func_args6.txtar
 
 						typ := t.Name
 						syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
 
 					case *ast.SelectorExpr:
 						// related test-cases:
-						// - TestScripts/document_completion_func_args2
-						// - TestScripts/document_completion_func_args4
-						// - TestScripts/document_completion_func_args5
+						// - cmd/gnols/testdata/document_completion_func_args2.txtar
+						// - cmd/gnols/testdata/document_completion_func_args4.txtar
+						// - cmd/gnols/testdata/document_completion_func_args5.txtar
 
 						pkg := t.X.(*ast.Ident).Name
 						typ := t.Sel.Name
@@ -160,7 +160,7 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 
 					case *ast.InterfaceType:
 						// related test-cases:
-						// - TestScripts/document_completion_func_args3
+						// - cmd/gnols/testdata/document_completion_func_args3.txtar
 
 						// TODO address when len(selectors)>1
 						for _, method := range t.Methods.List {
@@ -194,13 +194,13 @@ func (h *handler) handleTextDocumentCompletion(ctx context.Context, reply jsonrp
 									switch vs := v.Values[0].(type) { //nolint:gocritic
 									case *ast.CompositeLit:
 										// related test-cases:
-										// - TestScripts/document_completion_local_struct_global_var
+										// - cmd/gnols/testdata/document_completion_local_struct_global_var.txtar
 										typ := nodeName(vs.Type)
 										syms = symbolFinder{h.currentPkg.Symbols}.find(append([]string{typ}, selectors[1:]...))
 									}
 								} else {
 									// related test-cases:
-									// - TestScripts/document_completion_local_inline_struct
+									// - cmd/gnols/testdata/document_completion_local_inline_struct.txtar
 									// TODO address when len(selectors)>1
 									for _, field := range v.Type.(*ast.StructType).Fields.List {
 										syms = append(syms, gno.Symbol{
